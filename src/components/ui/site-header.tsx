@@ -1,11 +1,13 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/clerk-react";
 import AuthButton from "@/components/auth/AuthButton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import UserMenu from "../user/UserMenu";
 
 interface SiteHeaderProps {
   className?: string;
@@ -23,88 +25,56 @@ export function SiteHeader({
   showNavLinks = true,
 }: SiteHeaderProps) {
   const navigate = useNavigate();
-  const { isSignedIn } = useUser();
+  const location = useLocation();
+  const { isSignedIn, user } = useUser();
   const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  // Check if we're on the landing page
+  const isLandingPage = location.pathname === "/";
 
   return (
-    <motion.nav
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <header
       className={cn(
-        "relative z-20 flex justify-between items-center p-6",
-        transparent
-          ? "bg-transparent"
-          : theme === "dark"
-          ? "bg-black/40 backdrop-blur-md border-b border-white/5"
-          : "bg-white/40 backdrop-blur-md border-b border-black/5",
-        className
+        "w-full",
+        isLandingPage
+          ? "absolute top-0 z-50" // Static positioning for landing page
+          : "sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" // Sticky with background for other pages
       )}
     >
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        onClick={() => navigate("/")}
-        className={cn(
-          "text-2xl font-bold bg-clip-text text-transparent cursor-pointer",
-          theme === "dark"
-            ? "bg-gradient-to-r from-white to-white/80"
-            : "bg-gradient-to-r from-gray-800 to-gray-600"
-        )}
-      >
-        Timer Studio
-      </motion.div>
-
-      {showNavLinks && (
-        <div className="hidden md:flex items-center space-x-8">
-          <motion.a
-            whileHover={{ y: -2 }}
-            className={cn(
-              "hover:text-primary text-sm transition-colors",
-              theme === "dark" ? "text-white/70" : "text-gray-700"
-            )}
-            href="#features"
-          >
-            Features
-          </motion.a>
-          <motion.a
-            whileHover={{ y: -2 }}
-            className={cn(
-              "hover:text-primary text-sm transition-colors",
-              theme === "dark" ? "text-white/70" : "text-gray-700"
-            )}
-            href="#pricing"
-          >
-            Pricing
-          </motion.a>
-          <motion.a
-            whileHover={{ y: -2 }}
-            className={cn(
-              "hover:text-primary text-sm transition-colors",
-              theme === "dark" ? "text-white/70" : "text-gray-700"
-            )}
-            href="#testimonials"
-          >
-            Testimonials
-          </motion.a>
+      <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
+        <div className="flex items-center">
+          <a className="mr-6 flex items-center space-x-2" href="/">
+            <span className="font-bold sm:inline-block">Countable</span>
+          </a>
         </div>
-      )}
 
-      <div className="flex items-center space-x-4">
-        {showThemeToggle && <ThemeToggle />}
-
-        {showAuthButton && (
-          <AuthButton
-            mode="signin"
-            variant="outline"
-            className={cn(
-              "backdrop-blur-sm text-sm",
-              theme === "dark"
-                ? "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                : "border border-black/10 bg-black/5 text-gray-800 hover:bg-black/10"
-            )}
-          />
-        )}
+        <div className="flex items-center space-x-4">
+          {showNavLinks && (
+            <Button
+              variant="ghost"
+              className="px-0 hover:bg-transparent hover:text-foreground"
+              onClick={() => navigate("/studio")}
+            >
+              Go to Studio
+            </Button>
+          )}
+          <ThemeToggle />
+          {isSignedIn ? (
+            <UserMenu />
+          ) : (
+            <motion.button
+              onClick={() => navigate("/auth")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-rose-500 text-white font-medium shadow-lg shadow-indigo-500/20"
+            >
+              Sign In
+            </motion.button>
+          )}
+        </div>
       </div>
-    </motion.nav>
+    </header>
   );
 }
 

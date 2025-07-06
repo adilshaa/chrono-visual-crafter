@@ -144,7 +144,12 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Lato", sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html {
+    font-family: "Lato", sans-serif;
   }
 
   body.dark {

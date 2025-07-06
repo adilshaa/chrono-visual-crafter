@@ -103,9 +103,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           >
             Pricing
           </Button>
-          <AnimatedButton variant="outline" onClick={() => navigate("/auth")}>
+          <Button variant="outline" onClick={() => navigate("/auth")}>
             Sign In
-          </AnimatedButton>
+          </Button>
         </div>
       </nav>
 
@@ -145,22 +145,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <AnimatedButton
+            <Button
               onClick={onGetStarted}
-              variant="glow"
               size="lg"
               className="rounded-full px-8"
             >
               Get Started Free
-            </AnimatedButton>
-            <AnimatedButton
+            </Button>
+            <Button
               onClick={() => navigate("/pricing")}
               variant="outline"
               size="lg"
               className="rounded-full px-8"
             >
               View Pricing
-            </AnimatedButton>
+            </Button>
           </div>
         </div>
 
@@ -248,22 +247,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               Join thousands of creators using Counter Studio Pro
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <AnimatedButton
+              <Button
                 onClick={onGetStarted}
-                variant="glow"
                 size="lg"
                 className="rounded-full px-8"
               >
                 Get Started Free
-              </AnimatedButton>
-              <AnimatedButton
+              </Button>
+              <Button
                 onClick={() => navigate("/auth")}
                 variant="outline"
                 size="lg"
                 className="rounded-full px-8"
               >
                 Sign In to Pro
-              </AnimatedButton>
+              </Button>
             </div>
           </GlassCard>
         </div>

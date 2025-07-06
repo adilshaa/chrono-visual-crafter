@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ClerkAuthWrapper from "./components/auth/ClerkAuthWrapper";
 import PaddleProvider from "./components/payments/PaddleProvider";
-import DebugLogger from "./components/DebugLogger";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Pricing from "./pages/Pricing";
@@ -33,11 +32,11 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ClerkAuthWrapper>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+      <BrowserRouter>
+        <ClerkAuthWrapper>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <PaddleProvider>
               <Routes>
                 <Route path="/" element={<Landing />} />
@@ -70,10 +69,9 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </PaddleProvider>
-          </BrowserRouter>
-          <DebugLogger />
-        </TooltipProvider>
-      </ClerkAuthWrapper>
+          </TooltipProvider>
+        </ClerkAuthWrapper>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };

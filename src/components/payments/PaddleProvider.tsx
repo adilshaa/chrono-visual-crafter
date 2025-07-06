@@ -11,10 +11,16 @@ declare global {
   }
 }
 
+interface SubscriptionState {
+  status: string;
+  plan: string;
+  customerId?: string;
+}
+
 interface PaddleContextType {
   isLoaded: boolean;
+  subscription: SubscriptionState | null;
   openCheckout: (priceId: string, customData?: any) => void;
-  getSubscriptionStatus: () => Promise<any>;
   refreshSubscriptionStatus: () => Promise<any>;
   onSubscriptionUpdate?: (subscriptionData: any) => void;
 }
@@ -39,7 +45,10 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
   onSubscriptionUpdate,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const { user } = useUser();
+  const [subscription, setSubscription] = useState<SubscriptionState | null>(
+    null
+  );
+  const { user, isSignedIn } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -79,6 +88,14 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
     loadPaddle();
   }, [toast]);
 
+  useEffect(() => {
+    if (isSignedIn) {
+      refreshSubscriptionStatus();
+    } else {
+      setSubscription(null);
+    }
+  }, [isSignedIn]);
+
   const refreshSubscriptionStatus = async () => {
     if (!user) return null;
 
@@ -98,6 +115,12 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
           error,
           userId: user.id,
         });
+        // Set a default free plan status on error
+        const defaultSubscription = { status: "free", plan: "free" };
+        setSubscription(defaultSubscription);
+        if (onSubscriptionUpdate) {
+          onSubscriptionUpdate(defaultSubscription);
+        }
         return null;
       }
 
@@ -107,12 +130,12 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
         customerId: profile.paddle_customer_id,
       };
 
+      setSubscription(subscriptionData);
       logger.info("Subscription status refreshed", {
         subscriptionData,
         userId: user.id,
       });
 
-      // Notify the app of the subscription update
       if (onSubscriptionUpdate) {
         onSubscriptionUpdate(subscriptionData);
       }
@@ -123,12 +146,23 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
         error,
         userId: user.id,
       });
+      const defaultSubscription = { status: "free", plan: "free" };
+      setSubscription(defaultSubscription);
+      if (onSubscriptionUpdate) {
+        onSubscriptionUpdate(defaultSubscription);
+      }
       return null;
     }
   };
 
   const openCheckout = (priceId: string, customData?: any) => {
+    console.log("Opening Paddle checkout with:", { priceId, customData });
+
     if (!isLoaded || !window.Paddle) {
+      console.error("Paddle not loaded:", {
+        isLoaded,
+        hasPaddle: !!window.Paddle,
+      });
       toast({
         title: "Payment System Not Ready",
         description: "Please wait for the payment system to load.",
@@ -138,6 +172,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
     }
 
     if (!user) {
+      console.error("No user found when trying to open checkout");
       toast({
         title: "Authentication Required",
         description: "Please sign in to continue with payment.",
@@ -145,6 +180,11 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
       });
       return;
     }
+
+    console.log("Proceeding with checkout, user:", {
+      userId: user.id,
+      email: user.primaryEmailAddress?.emailAddress,
+    });
 
     window.Paddle.Checkout.open({
       items: [{ priceId }],
@@ -204,39 +244,18 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
     });
   };
 
-  const getSubscriptionStatus = async () => {
-    if (!user) return null;
-
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("subscription_status, subscription_plan, paddle_customer_id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error) throw error;
-
-      return {
-        status: profile.subscription_status || "free",
-        plan: profile.subscription_plan || "free",
-        customerId: profile.paddle_customer_id,
-      };
-    } catch (error) {
-      console.error("Error fetching subscription status:", error);
-      return null;
-    }
-  };
-
-  const value = {
-    isLoaded,
-    openCheckout,
-    getSubscriptionStatus,
-    refreshSubscriptionStatus,
-    onSubscriptionUpdate,
-  };
-
   return (
-    <PaddleContext.Provider value={value}>{children}</PaddleContext.Provider>
+    <PaddleContext.Provider
+      value={{
+        isLoaded,
+        subscription,
+        openCheckout,
+        refreshSubscriptionStatus,
+        onSubscriptionUpdate,
+      }}
+    >
+      {children}
+    </PaddleContext.Provider>
   );
 };
 

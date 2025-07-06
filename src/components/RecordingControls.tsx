@@ -13,9 +13,9 @@ import {
   Film,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRecording } from "@/contexts/RecordingContext";
 
 interface RecordingControlsProps {
-  isRecording: boolean;
   isPaused: boolean;
   onStart: () => void;
   onStop: () => void;
@@ -29,7 +29,6 @@ interface RecordingControlsProps {
 }
 
 const RecordingControls: React.FC<RecordingControlsProps> = ({
-  isRecording,
   isPaused,
   onStart,
   onStop,
@@ -41,6 +40,18 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
   isGeneratingGif,
   onCancelGif,
 }) => {
+  const { isRecording, setIsRecording } = useRecording();
+
+  const handleStart = () => {
+    setIsRecording(true);
+    onStart();
+  };
+
+  const handleStop = () => {
+    setIsRecording(false);
+    onStop();
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -51,7 +62,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
       <div className="flex items-center gap-3">
         {!isRecording ? (
           <Button
-            onClick={onStart}
+            onClick={handleStart}
             size="icon"
             className="w-14 h-14 rounded-full bg-red-600/90 hover:bg-red-700 text-white shadow-lg hover:shadow-red-500/25 transition-all duration-200 border-0"
             aria-label="Start recording"
@@ -73,7 +84,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
               )}
             </Button>
             <Button
-              onClick={onStop}
+              onClick={handleStop}
               size="icon"
               className="w-12 h-12 rounded-full bg-red-600/90 hover:bg-red-700 text-white shadow-lg border-0"
               aria-label="Stop recording"

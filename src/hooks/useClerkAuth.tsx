@@ -1,8 +1,8 @@
 import { useUser, useAuth as useClerkAuthHook } from "@clerk/clerk-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
 
 export const useClerkAuth = () => {
@@ -12,6 +12,8 @@ export const useClerkAuth = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const paymentToastShown = useRef(false);
 
   // Function to refresh profile data from database
   const refreshProfile = useCallback(async () => {
@@ -45,12 +47,16 @@ export const useClerkAuth = () => {
 
   useEffect(() => {
     // Check for payment success parameter
-    if (searchParams.get("payment") === "success") {
+    if (
+      searchParams.get("payment") === "success" &&
+      !paymentToastShown.current
+    ) {
       toast({
         title: "Welcome to Pro!",
         description:
           "Your subscription is now active. Enjoy all the premium features!",
       });
+      paymentToastShown.current = true;
 
       // Refresh profile data to get updated subscription status
       setTimeout(() => {
@@ -58,10 +64,9 @@ export const useClerkAuth = () => {
       }, 1000); // Wait 1 second for webhook to process
 
       // Remove the parameter from URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
+      navigate(window.location.pathname, { replace: true });
     }
-  }, [searchParams, toast, refreshProfile]);
+  }, [searchParams, navigate, refreshProfile, toast]);
 
   useEffect(() => {
     const syncUserWithSupabase = async () => {

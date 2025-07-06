@@ -35,10 +35,17 @@ const Pricing = () => {
 
       if (error) throw error;
 
+      console.log("Raw plans data from database:", data);
+
       const formattedPlans = data.map((plan, index) => {
         const features = Array.isArray(plan.features)
           ? plan.features
           : JSON.parse((plan.features as string) || "[]");
+
+        console.log(`Processing plan ${plan.name}:`, {
+          price_id: plan.paddle_price_id,
+          product_id: plan.paddle_product_id,
+        });
 
         return {
           planName: plan.name,
@@ -50,9 +57,11 @@ const Pricing = () => {
           buttonVariant: (plan.name === "Free" ? "secondary" : "primary") as
             | "secondary"
             | "primary",
+          paddlePriceId: plan.paddle_price_id || undefined,
         };
       });
 
+      console.log("All formatted plans:", formattedPlans);
       setPlans(formattedPlans);
     } catch (error: any) {
       toast({

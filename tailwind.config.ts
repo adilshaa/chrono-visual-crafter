@@ -20,7 +20,7 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["Lato", "var(--font-sans)", ...fontFamily.sans],
         orbitron: ["Orbitron", "sans-serif"],
       },
       colors: {

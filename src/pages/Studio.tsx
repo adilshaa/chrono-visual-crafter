@@ -9,15 +9,19 @@ import StudioSidebar from "@/components/StudioSidebar";
 import GlassCard from "@/components/ui/glass-card";
 import AuthButton from "@/components/auth/AuthButton";
 import { Loader2 } from "lucide-react";
+import { RecordingProvider, useRecording } from "@/contexts/RecordingContext";
+import { cn } from "@/lib/utils";
 
 // @ts-ignore
 import GIF from "gif.js";
 
-const Studio = () => {
+const StudioContent = () => {
+  const { user, profile } = useClerkAuth();
   const { toast } = useToast();
-  const { user, profile, loading } = useClerkAuth();
-  const navigate = useNavigate();
+  const { isRecording, setIsRecording } = useRecording();
+  const [isPaused, setIsPaused] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [recordingTime, setRecordingTime] = useState(0);
 
   const [counterSettings, setCounterSettings] = useState({
     startValue: 0,
@@ -61,15 +65,12 @@ const Studio = () => {
     chromeColors: "linear-gradient(45deg, #FFFFFF, #CCCCCC, #999999)",
   });
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
-  const [recordingTime, setRecordingTime] = useState(0);
   const [isGeneratingGif, setIsGeneratingGif] = useState(false);
   const [cancelGifGeneration, setCancelGifGeneration] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
   const recordedChunks = useRef<Blob[]>([]);
 
   // Sync text settings with counter settings
@@ -109,68 +110,46 @@ const Studio = () => {
     }`;
   };
 
-  const handleStartRecording = async () => {
-    if (!canvasRef.current) return;
+  const handleStartRecording = () => {
+    if (isRecording) return;
+    console.log("Starting recording...");
+    setRecordingTime(0);
+    recordedChunks.current = [];
+    setIsPaused(false);
+    setIsRecording(true);
 
-    try {
-      const stream = canvasRef.current.captureStream(60);
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp9",
-      });
+    const stream = (canvasRef.current as any).captureStream(60);
+    mediaRecorder.current = new MediaRecorder(stream, {
+      mimeType: "video/webm;codecs=vp9",
+    });
 
-      recordedChunks.current = [];
+    mediaRecorder.current.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.current.push(event.data);
+      }
+    };
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunks.current.push(event.data);
-        }
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      setCurrentValue(counterSettings.startValue);
-      toast({
-        title: "Recording Started",
-        description: "Counter animation recording has begun.",
-      });
-    } catch (error) {
-      console.error("Failed to start recording:", error);
-      toast({
-        title: "Recording Failed",
-        description: "Could not start recording. Please try again.",
-        variant: "destructive",
-      });
-    }
+    mediaRecorder.current.start();
+    setCurrentValue(counterSettings.startValue);
   };
 
   const handleStopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsPaused(false);
-      toast({
-        title: "Recording Stopped",
-        description: "Your counter animation is ready for export.",
-      });
+    if (!isRecording) return;
+    console.log("Stopping recording...");
+    setIsRecording(false);
+    if (mediaRecorder.current) {
+      mediaRecorder.current.stop();
     }
   };
 
   const handlePauseRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorder.current && isRecording) {
       if (isPaused) {
-        mediaRecorderRef.current.resume();
+        mediaRecorder.current.resume();
         setIsPaused(false);
-        toast({
-          title: "Recording Resumed",
-          description: "Counter animation recording continued.",
-        });
       } else {
-        mediaRecorderRef.current.pause();
+        mediaRecorder.current.pause();
         setIsPaused(true);
-        toast({
-          title: "Recording Paused",
-          description: "Counter animation recording paused.",
-        });
       }
     }
   };
@@ -380,19 +359,6 @@ const Studio = () => {
     return () => clearInterval(interval);
   }, [isRecording, isPaused, counterSettings]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#101010] flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block mb-4 animate-spin">
-            <Loader2 className="w-8 h-8 text-[#2BA6FF]" />
-          </div>
-          <p className="text-white">Loading Studio...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen bg-[#101010] text-white flex flex-col overflow-hidden">
       {/* Header */}
@@ -460,7 +426,6 @@ const Studio = () => {
           {/* Recording Controls */}
           <div className="flex-shrink-0 py-4 flex justify-center bg-[#171717] border-t border-white/5">
             <RecordingControls
-              isRecording={isRecording}
               isPaused={isPaused}
               onStart={handleStartRecording}
               onStop={handleStopRecording}
@@ -476,6 +441,14 @@ const Studio = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const Studio = () => {
+  return (
+    <RecordingProvider>
+      <StudioContent />
+    </RecordingProvider>
   );
 };
 

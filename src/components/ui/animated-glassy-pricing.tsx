@@ -1,5 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
 import { RippleButton } from "@/components/ui/multi-type-ripple-buttons";
+import { usePaddle } from "@/components/payments/PaddleProvider";
+import { useUser } from "@clerk/clerk-react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 // --- Internal Helper Components (Not exported) --- //
 
 const CheckIcon = ({ className }: { className?: string }) => (
@@ -189,6 +193,7 @@ export interface PricingCardProps {
   buttonText: string;
   isPopular?: boolean;
   buttonVariant?: "primary" | "secondary";
+  paddlePriceId?: string;
 }
 
 /**
@@ -202,7 +207,61 @@ export const PricingCard = ({
   buttonText,
   isPopular = false,
   buttonVariant = "primary",
+  paddlePriceId,
 }: PricingCardProps) => {
+  const { openCheckout, subscription } = usePaddle();
+  const { isSignedIn } = useUser();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const isCurrentPlan =
+    subscription?.plan?.toLowerCase() === planName.toLowerCase();
+
+  const handleSubscribe = () => {
+    if (isCurrentPlan) {
+      toast({
+        title: "Already Subscribed",
+        description: "You are already on this plan.",
+        variant: "default",
+      });
+      return;
+    }
+
+    if (!isSignedIn) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to subscribe to a plan.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (parseFloat(price) === 0) {
+      toast({
+        title: "Free Plan Active",
+        description:
+          "You're already on the free plan! Redirecting to studio...",
+      });
+      navigate("/studio");
+      return;
+    }
+
+    if (!paddlePriceId) {
+      toast({
+        title: "Coming Soon",
+        description: "This plan will be available soon!",
+      });
+      return;
+    }
+
+    console.log("Opening checkout with price ID:", paddlePriceId);
+    openCheckout(paddlePriceId, {
+      planName: planName,
+      planPrice: price,
+    });
+  };
+
   const cardClasses = `
     backdrop-blur-[14px] bg-gradient-to-br rounded-2xl shadow-xl flex-1 max-w-xs px-7 py-8 flex flex-col transition-all duration-300
     from-black/5 to-black/0 border border-black/10
@@ -212,7 +271,9 @@ export const PricingCard = ({
         ? "scale-105 relative ring-2 ring-cyan-400/20 dark:from-white/20 dark:to-white/10 dark:border-cyan-400/30 shadow-2xl"
         : ""
     }
+    ${isCurrentPlan ? "opacity-60" : ""}
   `;
+
   const buttonClasses = `
     mt-auto w-full py-2.5 rounded-xl font-semibold text-[14px] transition font-sans
     ${
@@ -241,7 +302,9 @@ export const PricingCard = ({
         <span className="text-[48px] font-extralight text-foreground font-display">
           ${price}
         </span>
-        <span className="text-[14px] text-foreground/70 font-sans">/mo</span>
+        {parseFloat(price) > 0 && (
+          <span className="text-[14px] text-foreground/70 font-sans">/mo</span>
+        )}
       </div>
       <div className="card-divider w-full mb-5 h-px bg-[linear-gradient(90deg,transparent,rgba(0,0,0,0.1)_50%,transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.09)_20%,rgba(255,255,255,0.22)_50%,rgba(255,255,255,0.09)_80%,transparent)]"></div>
       <ul className="flex flex-col gap-2 text-[14px] text-foreground/90 mb-6 font-sans">
@@ -251,7 +314,13 @@ export const PricingCard = ({
           </li>
         ))}
       </ul>
-      <RippleButton className={buttonClasses.trim()}>{buttonText}</RippleButton>
+      <RippleButton
+        onClick={handleSubscribe}
+        className={buttonClasses.trim()}
+        disabled={isCurrentPlan}
+      >
+        {isCurrentPlan ? "Current Plan" : buttonText}
+      </RippleButton>
     </div>
   );
 };
