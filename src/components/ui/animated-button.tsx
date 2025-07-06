@@ -1,79 +1,65 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Button, ButtonProps } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import React, { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-interface AnimatedButtonProps extends ButtonProps {
-  children: React.ReactNode;
-  loading?: boolean;
-  animation?: 'scale' | 'bounce' | 'pulse' | 'glow';
+interface AnimatedButtonProps {
+  children: ReactNode;
+  variant?: "glow" | "shimmer" | "outline" | "ghost" | "default";
+  size?: "sm" | "md" | "lg";
+  className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  type?: "button" | "submit" | "reset";
+  fullWidth?: boolean;
 }
 
-const AnimatedButton: React.FC<AnimatedButtonProps> = ({
+export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   children,
+  variant = "default",
+  size = "md",
   className,
-  loading = false,
-  animation = 'scale',
-  disabled,
-  ...props
+  onClick,
+  disabled = false,
+  type = "button",
+  fullWidth = false,
 }) => {
-  const animations = {
-    scale: {
-      whileHover: { scale: 1.05 },
-      whileTap: { scale: 0.95 }
-    },
-    bounce: {
-      whileHover: { y: -2 },
-      whileTap: { y: 0 }
-    },
-    pulse: {
-      whileHover: { scale: [1, 1.05, 1] },
-      transition: { duration: 0.3, repeat: Infinity }
-    },
-    glow: {
-      whileHover: { 
-        boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)',
-        scale: 1.02
-      }
-    }
+  const baseStyles =
+    "relative font-medium transition-all duration-300 overflow-hidden";
+
+  const sizeStyles = {
+    sm: "py-1.5 px-3 text-sm",
+    md: "py-2 px-4",
+    lg: "py-3 px-6 text-lg",
   };
 
+  const variantStyles = {
+    glow: "bg-black text-white border border-islandblue-400 hover:bg-islandblue-900 animate-pulse-glow",
+    shimmer:
+      "bg-black text-white border border-gray-700 hover:border-islandblue-400/50 before:absolute before:inset-0 before:bg-shimmer-gradient before:animate-shimmer before:content-[''] before:z-0",
+    outline:
+      "bg-transparent text-white border border-islandblue-400/50 hover:bg-islandblue-900/30 hover:border-islandblue-400",
+    ghost:
+      "bg-transparent text-white hover:bg-white/5 hover:text-islandblue-300",
+    default: "bg-islandblue-600 text-white hover:bg-islandblue-700",
+  };
+
+  const fullWidthStyle = fullWidth ? "w-full" : "";
+
   return (
-    <motion.div
-      {...animations[animation]}
-      className="inline-block"
+    <Button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        baseStyles,
+        variantStyles[variant],
+        sizeStyles[size],
+        fullWidthStyle,
+        className
+      )}
     >
-      <Button
-        className={cn(
-          'relative overflow-hidden transition-all duration-300',
-          loading && 'cursor-not-allowed',
-          className
-        )}
-        disabled={disabled || loading}
-        {...props}
-      >
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/20"
-          >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-            />
-          </motion.div>
-        )}
-        <motion.span
-          initial={{ opacity: 1 }}
-          animate={{ opacity: loading ? 0 : 1 }}
-          transition={{ duration: 0.2 }}
-        >
-          {children}
-        </motion.span>
-      </Button>
-    </motion.div>
+      <span className="relative z-10">{children}</span>
+    </Button>
   );
 };
 

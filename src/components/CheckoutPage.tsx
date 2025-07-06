@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Check, CreditCard, Shield, ArrowLeft } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react'; // Changed from useAuth
-import { usePaddle } from '@/components/payments/PaddleProvider'; // To potentially call openCheckout
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Check, CreditCard, Shield, ArrowLeft } from "lucide-react";
+import { useUser } from "@clerk/clerk-react"; // Changed from useAuth
+import { usePaddle } from "@/components/payments/PaddleProvider"; // To potentially call openCheckout
+import { useToast } from "@/hooks/use-toast";
 
 interface Plan {
   id: string;
@@ -15,7 +21,7 @@ interface Plan {
   currency: string;
   interval_type: string;
   features: string[];
-  paddle_product_id?: string;
+  paddle_price_id?: string;
 }
 
 interface CheckoutPageProps {
@@ -24,10 +30,15 @@ interface CheckoutPageProps {
   onClose: () => void;
 }
 
-const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) => {
+const CheckoutPage: React.FC<CheckoutPageProps> = ({
+  plan,
+  onBack,
+  onClose,
+}) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { user, isSignedIn } = useUser(); // Clerk user object and isSignedIn status
-  const { openCheckout: actualPaddleOpenCheckout, isLoaded: isPaddleLoaded } = usePaddle();
+  const { openCheckout: actualPaddleOpenCheckout, isLoaded: isPaddleLoaded } =
+    usePaddle();
   const { toast } = useToast();
 
   // Note: The 'profile' object previously came from useAuth().
@@ -40,17 +51,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
       toast({
         title: "Authentication Required",
         description: "Please sign in to complete your purchase.",
-        variant: "destructive"
+        variant: "destructive",
       });
       // Optionally, redirect to login: navigate('/auth');
       return;
     }
 
-    if (!plan.paddle_product_id) {
+    if (!plan.paddle_price_id) {
       toast({
         title: "Plan Not Purchasable",
         description: "This plan does not have a configured payment ID.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -58,8 +69,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
     if (!isPaddleLoaded) {
       toast({
         title: "Payment System Not Ready",
-        description: "Please wait a moment for the payment system to load and try again.",
-        variant: "destructive"
+        description:
+          "Please wait a moment for the payment system to load and try again.",
+        variant: "destructive",
       });
       return;
     }
@@ -67,7 +79,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
     setIsProcessing(true);
     // Call the actual Paddle checkout from PaddleProvider
     // PaddleProvider's openCheckout already includes userId: user.id
-    actualPaddleOpenCheckout(plan.paddle_product_id, {
+    actualPaddleOpenCheckout(plan.paddle_price_id, {
       planId: plan.id, // Supabase plan ID from the plan prop
       planName: plan.name,
     });
@@ -89,7 +101,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
         >
           ✕
         </button>
-        
+
         <div className="text-center mb-8">
           <Button
             onClick={onBack}
@@ -98,8 +110,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Plans
           </Button>
-          
-          <h1 className="text-4xl font-bold text-white mb-4">Complete Your Order</h1>
+
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Complete Your Order
+          </h1>
           <p className="text-gray-300 text-lg">
             Review your subscription details and complete payment
           </p>
@@ -114,24 +128,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
                 Order Summary
               </CardTitle>
             </CardHeader>
-            
+
             <CardContent className="space-y-6">
               <div className="bg-white/5 rounded-lg p-4 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      {plan.name}
+                    </h3>
                     <p className="text-gray-300 text-sm">{plan.description}</p>
                   </div>
                   <Badge className="bg-blue-500/20 text-blue-300">
                     ${plan.price}/{plan.interval_type}
                   </Badge>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-white">Included features:</h4>
                   <ul className="space-y-1">
                     {plan.features.slice(0, 4).map((feature, index) => (
-                      <li key={index} className="flex items-center text-gray-300 text-sm">
+                      <li
+                        key={index}
+                        className="flex items-center text-gray-300 text-sm"
+                      >
                         <Check className="w-3 h-3 text-green-400 mr-2 flex-shrink-0" />
                         {feature}
                       </li>
@@ -144,7 +163,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
                   </ul>
                 </div>
               </div>
-              
+
               <div className="space-y-3 border-t border-white/20 pt-4">
                 <div className="flex justify-between text-gray-300">
                   <span>Subtotal</span>
@@ -173,31 +192,38 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
                 Your subscription will be processed securely through Paddle
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-6">
               {isSignedIn && user && (
                 <div className="bg-white/5 rounded-lg p-4 space-y-2">
                   <h4 className="font-medium text-white">Account Details</h4>
-                  <p className="text-gray-300 text-sm">Email: {user.primaryEmailAddress?.emailAddress}</p>
+                  <p className="text-gray-300 text-sm">
+                    Email: {user.primaryEmailAddress?.emailAddress}
+                  </p>
                   {user.fullName && (
-                    <p className="text-gray-300 text-sm">Name: {user.fullName}</p>
+                    <p className="text-gray-300 text-sm">
+                      Name: {user.fullName}
+                    </p>
                   )}
                 </div>
               )}
-              
+
               <div className="space-y-4">
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <Shield className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-medium text-blue-300">Secure Payment</h4>
+                      <h4 className="font-medium text-blue-300">
+                        Secure Payment
+                      </h4>
                       <p className="text-blue-200 text-sm">
-                        Your payment is secured by Paddle with 256-bit SSL encryption
+                        Your payment is secured by Paddle with 256-bit SSL
+                        encryption
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3 text-sm text-gray-300">
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-400 mr-2" />
@@ -213,7 +239,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
                   </div>
                 </div>
               </div>
-              
+
               <Button
                 onClick={handleCheckout}
                 disabled={isProcessing}
@@ -231,10 +257,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ plan, onBack, onClose }) =>
                   </>
                 )}
               </Button>
-              
+
               <p className="text-gray-400 text-xs text-center">
-                By completing this purchase, you agree to our Terms of Service and Privacy Policy.
-                Your subscription will automatically renew each {plan.interval_type}.
+                By completing this purchase, you agree to our Terms of Service
+                and Privacy Policy. Your subscription will automatically renew
+                each {plan.interval_type}.
               </p>
             </CardContent>
           </Card>

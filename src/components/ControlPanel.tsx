@@ -3,7 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import TransitionLibrary from "./TransitionLibrary";
+import { FastForward, Play, Rewind } from "lucide-react";
 
 interface ControlPanelProps {
   settings: any;
@@ -14,12 +22,76 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   settings,
   onSettingsChange,
 }) => {
+  // Helper function to get the speed descriptor
+  const getSpeedDescription = (speed: number) => {
+    if (speed <= 0.5) return "Slow";
+    if (speed <= 1) return "Normal";
+    if (speed <= 2) return "Fast";
+    return "Very Fast";
+  };
+
   return (
     <div className="space-y-4">
+      {/* Animation Speed Control - Moved to top for better accessibility */}
+      <Card className="!bg-[#101010] border-gray-700/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-white text-base font-medium flex items-center gap-2">
+            ⏱️ Animation Speed
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="bg-[#151515] rounded-lg p-3 border border-gray-800/50">
+              <div className="flex items-center gap-3 mb-3">
+                <Rewind className="w-4 h-4 text-gray-400" />
+                <Slider
+                  id="animation-speed"
+                  value={[settings.speed]}
+                  onValueChange={([speed]) =>
+                    onSettingsChange({ ...settings, speed })
+                  }
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  className="flex-1"
+                  aria-label="Animation speed"
+                />
+                <FastForward className="w-4 h-4 text-gray-400" />
+              </div>
+              <div className="flex justify-between">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-400">Speed</span>
+                  <span className="text-lg font-bold text-white">
+                    {settings.speed.toFixed(1)}x
+                  </span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-400">Description</span>
+                  <span className="text-sm text-white">
+                    {getSpeedDescription(settings.speed)}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-400">Duration</span>
+                  <span className="text-sm text-white">
+                    {(settings.duration / settings.speed).toFixed(1)}s
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500">
+              Higher speeds may affect rendering quality during preview
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Counter Settings */}
       <Card className="!bg-[#101010] border-gray-700/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-white text-base font-medium flex items-center gap-2">
-            ⚙️ Counter Settings
+          <CardTitle className="text-white text-base font-medium">
+            🧮 Counter Settings
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -56,7 +128,12 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-white">Duration (seconds): {settings.duration}</Label>
+            <div className="flex justify-between">
+              <Label className="text-white">Duration</Label>
+              <span className="text-sm text-white">
+                {settings.duration} seconds
+              </span>
+            </div>
             <Slider
               value={[settings.duration]}
               onValueChange={([duration]) =>
@@ -91,7 +168,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-white">Font Size: {settings.fontSize}px</Label>
+            <div className="flex justify-between">
+              <Label className="text-white">Font Size</Label>
+              <span className="text-sm text-white">{settings.fontSize}px</span>
+            </div>
             <Slider
               value={[settings.fontSize]}
               onValueChange={([fontSize]) =>
@@ -104,36 +184,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-white">Transition Effect</Label>
-            <Select
-              value={settings.transition}
-              onValueChange={(transition) =>
+          {/* Transition Library */}
+          <Card className="!bg-[#151515] border-gray-700/30 p-3">
+            <TransitionLibrary
+              selectedTransition={settings.transition}
+              onSelectTransition={(transition) =>
                 onSettingsChange({ ...settings, transition })
               }
-            >
-              <SelectTrigger className="bg-[#181818] border-gray-600 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="slideUp">Slide Up</SelectItem>
-                <SelectItem value="slideDown">Slide Down</SelectItem>
-                <SelectItem value="slideLeft">Slide Left</SelectItem>
-                <SelectItem value="slideRight">Slide Right</SelectItem>
-                <SelectItem value="fadeIn">Fade In</SelectItem>
-                <SelectItem value="scale">Scale</SelectItem>
-                <SelectItem value="rotate">Rotate</SelectItem>
-                <SelectItem value="bounce">Bounce</SelectItem>
-                <SelectItem value="elastic">Elastic</SelectItem>
-                <SelectItem value="wave">Wave</SelectItem>
-                <SelectItem value="spiral">Spiral</SelectItem>
-                <SelectItem value="zoom">Zoom</SelectItem>
-                <SelectItem value="flip">Flip</SelectItem>
-                <SelectItem value="typewriter">Typewriter</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            />
+          </Card>
 
           <div className="space-y-2">
             <Label className="text-white">Number Format</Label>
@@ -200,20 +259,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 <SelectItem value="transparent">Transparent</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-white">Animation Speed: {settings.speed}x</Label>
-            <Slider
-              value={[settings.speed]}
-              onValueChange={([speed]) =>
-                onSettingsChange({ ...settings, speed })
-              }
-              min={0.1}
-              max={5}
-              step={0.1}
-              className="w-full"
-            />
           </div>
         </CardContent>
       </Card>

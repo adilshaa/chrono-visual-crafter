@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -53,10 +52,12 @@ const Studio = () => {
     neonIntensity: 10,
     glowColor: "#FFFFFF",
     glowIntensity: 15,
-    gradientColors: "linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7)",
+    gradientColors:
+      "linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7)",
     fireColors: "linear-gradient(45deg, #FF4444, #FF8800, #FFFF00)",
     fireGlow: 10,
-    rainbowColors: "linear-gradient(45deg, #FF0000, #FF8800, #FFFF00, #00FF00, #0088FF, #8800FF, #FF0088)",
+    rainbowColors:
+      "linear-gradient(45deg, #FF0000, #FF8800, #FFFF00, #00FF00, #0088FF, #8800FF, #FF0088)",
     chromeColors: "linear-gradient(45deg, #FFFFFF, #CCCCCC, #999999)",
   });
 
@@ -73,7 +74,7 @@ const Studio = () => {
 
   // Sync text settings with counter settings
   useEffect(() => {
-    setTextSettings(prev => ({
+    setTextSettings((prev) => ({
       ...prev,
       fontSize: counterSettings.fontSize,
       fontFamily: counterSettings.fontFamily,
@@ -82,20 +83,30 @@ const Studio = () => {
 
   const formatNumber = (value: number) => {
     let formattedValue = Math.floor(value).toString();
-    
+
     // Apply separator
     if (counterSettings.separator && counterSettings.separator !== "none") {
-      const separator = counterSettings.separator === "comma" ? "," :
-                       counterSettings.separator === "dot" ? "." :
-                       counterSettings.separator === "space" ? " " : "";
-      
+      const separator =
+        counterSettings.separator === "comma"
+          ? ","
+          : counterSettings.separator === "dot"
+          ? "."
+          : counterSettings.separator === "space"
+          ? " "
+          : "";
+
       if (separator) {
-        formattedValue = formattedValue.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
+        formattedValue = formattedValue.replace(
+          /\B(?=(\d{3})+(?!\d))/g,
+          separator
+        );
       }
     }
-    
+
     // Add prefix and suffix
-    return `${counterSettings.prefix || ""}${formattedValue}${counterSettings.suffix || ""}`;
+    return `${counterSettings.prefix || ""}${formattedValue}${
+      counterSettings.suffix || ""
+    }`;
   };
 
   const handleStartRecording = async () => {
@@ -170,14 +181,17 @@ const Studio = () => {
     // Determine the best WebM codec for alpha channel support
     let mimeType = "video/webm";
     let fileExtension = "webm";
+    let codecDescription = "WebM";
 
     // Check for VP9 support (best for alpha channels)
     if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
       mimeType = "video/webm;codecs=vp9";
+      codecDescription = "VP9";
     }
     // Fallback to VP8 if VP9 not supported
     else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
       mimeType = "video/webm;codecs=vp8";
+      codecDescription = "VP8";
     }
 
     const blob = new Blob(recordedChunks.current, {
@@ -193,15 +207,13 @@ const Studio = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
+    const hasTransparency = counterSettings.background === "transparent";
+
     toast({
       title: "Video Downloaded",
-      description: `Your counter animation video has been saved as WebM ${
-        mimeType.includes("vp9")
-          ? "VP9"
-          : mimeType.includes("vp8")
-          ? "VP8"
-          : "format"
-      } with alpha channel support.`,
+      description: `Your counter animation video has been saved as ${codecDescription} ${
+        hasTransparency ? "with transparency support" : ""
+      }.`,
     });
   };
 
@@ -217,7 +229,16 @@ const Studio = () => {
         quality: 15,
         width: 800,
         height: 600,
-        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+        workerScript:
+          "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js",
+        transparent:
+          counterSettings.background === "transparent" ? 0x00000000 : null,
+        background:
+          counterSettings.background === "transparent"
+            ? 0x00000000
+            : counterSettings.background === "white"
+            ? 0xffffff
+            : 0x000000,
       });
 
       const canvas = canvasRef.current;
@@ -225,7 +246,10 @@ const Studio = () => {
       if (!ctx) return;
 
       const frameCount = Math.min(60, counterSettings.duration * 10);
-      const delay = Math.max(50, (counterSettings.duration * 1000) / frameCount);
+      const delay = Math.max(
+        50,
+        (counterSettings.duration * 1000) / frameCount
+      );
 
       let frameIndex = 0;
 
@@ -242,24 +266,28 @@ const Studio = () => {
         }
 
         const progress = frameIndex / (frameCount - 1);
-        const value = counterSettings.startValue + (counterSettings.endValue - counterSettings.startValue) * progress;
+        const value =
+          counterSettings.startValue +
+          (counterSettings.endValue - counterSettings.startValue) * progress;
 
-        // Clear canvas
-        if (counterSettings.background === "transparent") {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        } else {
-          ctx.fillStyle = counterSettings.background === "white" ? "#FFFFFF" : "#000000";
+        // Clear canvas with proper transparency handling
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (counterSettings.background !== "transparent") {
+          ctx.fillStyle =
+            counterSettings.background === "white" ? "#FFFFFF" : "#000000";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // Draw counter
-        ctx.fillStyle = counterSettings.background === "white" ? "#000000" : "#FFFFFF";
+        // Draw counter with proper color based on background
+        ctx.fillStyle =
+          counterSettings.background === "white" ? "#000000" : "#FFFFFF";
         ctx.font = `${counterSettings.fontSize}px ${counterSettings.fontFamily}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(formatNumber(value), canvas.width / 2, canvas.height / 2);
 
-        gif.addFrame(canvas, { delay });
+        gif.addFrame(canvas, { delay, copy: true });
         frameIndex++;
 
         // Add next frame after a small delay to prevent blocking
@@ -286,10 +314,13 @@ const Studio = () => {
 
           toast({
             title: "GIF Downloaded",
-            description: "Your counter animation GIF has been saved.",
+            description:
+              counterSettings.background === "transparent"
+                ? "Your transparent counter animation GIF has been saved."
+                : "Your counter animation GIF has been saved.",
           });
         }
-        
+
         setIsGeneratingGif(false);
         setCancelGifGeneration(false);
       });
@@ -412,8 +443,8 @@ const Studio = () => {
           } overflow-hidden h-full`}
         >
           {/* Preview Area */}
-          <div className="flex flex p-4 justify-center items-center">
-            <div className="w-[600px] h-[350px] flex items-center justify-center rounded-lg overflow-hidden">
+          <div className="flex-1 flex justify-center items-center bg-[#0c0c0c] p-6">
+            <div className="w-[600px] h-[350px] flex items-center justify-center rounded-lg overflow-hidden bg-[#080808] shadow-2xl border border-white/5">
               <CounterPreview
                 ref={canvasRef}
                 settings={counterSettings}
@@ -425,9 +456,9 @@ const Studio = () => {
               />
             </div>
           </div>
-          
+
           {/* Recording Controls */}
-          <div className="flex-shrink-0 pb-4 flex justify-center">
+          <div className="flex-shrink-0 py-4 flex justify-center bg-[#171717] border-t border-white/5">
             <RecordingControls
               isRecording={isRecording}
               isPaused={isPaused}

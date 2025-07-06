@@ -1,45 +1,47 @@
-
-import React from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import React, { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface GlassCardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
-  hover?: boolean;
-  blur?: 'sm' | 'md' | 'lg' | 'xl';
-  opacity?: number;
+  variant?: "pulsing" | "shimmer" | "floating" | "breathing" | "default";
+  hoverEffect?: boolean;
 }
 
-const GlassCard: React.FC<GlassCardProps> = ({
+export const GlassCard: React.FC<GlassCardProps> = ({
   children,
-  className = '',
-  hover = true,
-  blur = 'xl',
-  opacity = 0.8
+  className,
+  variant = "default",
+  hoverEffect = true,
 }) => {
-  const blurClasses = {
-    sm: 'backdrop-blur-sm',
-    md: 'backdrop-blur-md',
-    lg: 'backdrop-blur-lg',
-    xl: 'backdrop-blur-xl'
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  // Base styles using the glass-card class that already has theme support
+  const baseStyles = "glass-card relative rounded-xl overflow-hidden";
+
+  const variantStyles = {
+    pulsing: isDark ? "animate-pulse-glow" : "animate-pulse-glow",
+    shimmer:
+      "before:absolute before:inset-0 before:bg-shimmer-gradient before:animate-shimmer before:content-[''] before:z-0",
+    floating: "animate-float",
+    breathing: "animate-breathe",
+    default: "",
   };
 
+  const hoverStyles = hoverEffect
+    ? isDark
+      ? "hover:border-primary/50 transition-all duration-300"
+      : "hover:border-primary/70 transition-all duration-300"
+    : "";
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      whileHover={hover ? { y: -2, scale: 1.02 } : undefined}
-      className={cn(
-        `${blurClasses[blur]} border border-white/10 shadow-2xl transition-all duration-300`,
-        `bg-[#171717]/${Math.round(opacity * 100)}`,
-        hover && 'hover:shadow-3xl hover:border-[#2BA6FF]/30',
-        className
-      )}
+    <div
+      className={cn(baseStyles, variantStyles[variant], hoverStyles, className)}
     >
-      {children}
-    </motion.div>
+      <div className="relative z-10">{children}</div>
+    </div>
   );
 };
 

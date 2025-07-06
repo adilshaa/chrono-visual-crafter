@@ -1,15 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { User, Settings, Crown, Users, CreditCard, LogOut, Home } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useAuth } from "@/hooks/useAuth";
+import { usePaddle } from "@/components/payments/PaddleProvider";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  User,
+  Settings,
+  Crown,
+  Users,
+  CreditCard,
+  LogOut,
+  RefreshCw,
+} from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -28,16 +50,17 @@ interface UserManagementProps {
 
 const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
   const { user, profile, signOut, updateProfile } = useAuth();
+  const { refreshSubscriptionStatus } = usePaddle();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState("profile");
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    email: user?.email || '',
+    full_name: profile?.full_name || "",
+    email: user?.email || "",
   });
 
-  const isAdmin = profile?.subscription_plan === 'admin'; // Simple admin check
+  const isAdmin = profile?.subscription_plan === "admin"; // Simple admin check
 
   useEffect(() => {
     if (isAdmin) {
@@ -49,9 +72,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setAllUsers(data);
@@ -59,7 +82,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
       toast({
         title: "Error loading users",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -69,7 +92,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -83,12 +106,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
       toast({
         title: "Update failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } else {
       toast({
         title: "Profile updated",
-        description: "Your profile has been updated successfully."
+        description: "Your profile has been updated successfully.",
       });
     }
 
@@ -100,7 +123,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
     onClose();
     toast({
       title: "Signed out",
-      description: "You have been signed out successfully."
+      description: "You have been signed out successfully.",
     });
   };
 
@@ -109,32 +132,58 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
 
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .delete()
-        .eq('user_id', userId);
+        .eq("user_id", userId);
 
       if (error) throw error;
 
-      setAllUsers(allUsers.filter(u => u.user_id !== userId));
+      setAllUsers(allUsers.filter((u) => u.user_id !== userId));
       toast({
         title: "User deleted",
-        description: "User has been removed successfully."
+        description: "User has been removed successfully.",
       });
     } catch (error: any) {
       toast({
         title: "Delete failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
+  const handleRefreshSubscription = async () => {
+    try {
+      setLoading(true);
+      const updatedSubscription = await refreshSubscriptionStatus();
+      if (updatedSubscription) {
+        toast({
+          title: "Subscription refreshed",
+          description: `Your subscription status has been updated to: ${updatedSubscription.plan} (${updatedSubscription.status})`,
+        });
+      } else {
+        toast({
+          title: "No changes detected",
+          description: "Your subscription status is already up to date.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error refreshing subscription",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getSubscriptionBadge = (status: string, plan?: string) => {
-    if (status === 'active' && plan) {
+    if (status === "active" && plan) {
       const colors = {
-        free: 'bg-gray-500',
-        pro: 'bg-blue-500',
-        premium: 'bg-purple-500'
+        free: "bg-gray-500",
+        pro: "bg-blue-500",
+        premium: "bg-purple-500",
       };
       return (
         <Badge className={`${colors[plan as keyof typeof colors]} text-white`}>
@@ -158,7 +207,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
         >
           ✕
         </button>
-        
+
         <Card className="w-full bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl">
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold text-white flex items-center justify-center">
@@ -169,35 +218,53 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
               Manage your account settings and preferences
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-sm">
-                <TabsTrigger value="profile" className="text-white data-[state=active]:bg-white/20">
+                <TabsTrigger
+                  value="profile"
+                  className="text-white data-[state=active]:bg-white/20"
+                >
                   <Settings className="w-4 h-4 mr-1" />
                   Profile
                 </TabsTrigger>
-                <TabsTrigger value="subscription" className="text-white data-[state=active]:bg-white/20">
+                <TabsTrigger
+                  value="subscription"
+                  className="text-white data-[state=active]:bg-white/20"
+                >
                   <Crown className="w-4 h-4 mr-1" />
                   Subscription
                 </TabsTrigger>
                 {isAdmin && (
-                  <TabsTrigger value="users" className="text-white data-[state=active]:bg-white/20">
+                  <TabsTrigger
+                    value="users"
+                    className="text-white data-[state=active]:bg-white/20"
+                  >
                     <Users className="w-4 h-4 mr-1" />
                     All Users
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="billing" className="text-white data-[state=active]:bg-white/20">
+                <TabsTrigger
+                  value="billing"
+                  className="text-white data-[state=active]:bg-white/20"
+                >
                   <CreditCard className="w-4 h-4 mr-1" />
                   Billing
                 </TabsTrigger>
               </TabsList>
-              
+
               <div className="mt-6 max-h-96 overflow-y-auto custom-scrollbar">
                 <TabsContent value="profile">
                   <form onSubmit={handleUpdateProfile} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="full_name" className="text-white">Full Name</Label>
+                      <Label htmlFor="full_name" className="text-white">
+                        Full Name
+                      </Label>
                       <Input
                         id="full_name"
                         name="full_name"
@@ -208,9 +275,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                         placeholder="Enter your full name"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-white">Email</Label>
+                      <Label htmlFor="email" className="text-white">
+                        Email
+                      </Label>
                       <Input
                         id="email"
                         name="email"
@@ -219,18 +288,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                         disabled
                         className="bg-white/5 border-white/20 text-gray-400 backdrop-blur-sm"
                       />
-                      <p className="text-xs text-gray-400">Email cannot be changed</p>
+                      <p className="text-xs text-gray-400">
+                        Email cannot be changed
+                      </p>
                     </div>
-                    
+
                     <div className="flex gap-4">
                       <Button
                         type="submit"
                         disabled={loading}
                         className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                       >
-                        {loading ? 'Updating...' : 'Update Profile'}
+                        {loading ? "Updating..." : "Update Profile"}
                       </Button>
-                      
+
                       <Button
                         type="button"
                         onClick={handleSignOut}
@@ -243,66 +314,118 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                     </div>
                   </form>
                 </TabsContent>
-                
+
                 <TabsContent value="subscription">
                   <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-white">
+                        Current Plan
+                      </h3>
+                      <Button
+                        onClick={handleRefreshSubscription}
+                        size="sm"
+                        variant="outline"
+                        className="border-white/30 text-white"
+                        disabled={loading}
+                      >
+                        <RefreshCw
+                          className={`w-4 h-4 mr-1 ${
+                            loading ? "animate-spin" : ""
+                          }`}
+                        />
+                        Refresh
+                      </Button>
+                    </div>
+
                     <div className="bg-white/5 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-2">Current Plan</h3>
                       <div className="flex items-center gap-2 mb-4">
-                        {getSubscriptionBadge(profile?.subscription_status || 'free', profile?.subscription_plan)}
+                        {getSubscriptionBadge(
+                          profile?.subscription_status || "free",
+                          profile?.subscription_plan
+                        )}
                         <span className="text-gray-300">
-                          {profile?.subscription_plan || 'Free Plan'}
+                          {profile?.subscription_plan || "Free Plan"}
                         </span>
                       </div>
                       <p className="text-gray-400 text-sm">
-                        {profile?.subscription_status === 'active' 
-                          ? 'Your subscription is active and will renew automatically.'
-                          : 'Upgrade to a paid plan to unlock premium features.'
-                        }
+                        {profile?.subscription_status === "active"
+                          ? "Your subscription is active and will renew automatically."
+                          : "Upgrade to a paid plan to unlock premium features."}
                       </p>
                     </div>
-                    
+
                     <Button className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white">
                       Upgrade Plan
                     </Button>
                   </div>
                 </TabsContent>
-                
+
                 {isAdmin && (
                   <TabsContent value="users">
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold text-white">All Users</h3>
-                        <Button onClick={fetchAllUsers} size="sm" variant="outline" className="border-white/30 text-white">
+                        <h3 className="text-lg font-semibold text-white">
+                          All Users
+                        </h3>
+                        <Button
+                          onClick={fetchAllUsers}
+                          size="sm"
+                          variant="outline"
+                          className="border-white/30 text-white"
+                        >
                           Refresh
                         </Button>
                       </div>
-                      
+
                       <div className="bg-white/5 rounded-lg overflow-hidden">
                         <Table>
                           <TableHeader>
                             <TableRow className="border-white/20">
-                              <TableHead className="text-gray-300">Name</TableHead>
-                              <TableHead className="text-gray-300">Email</TableHead>
-                              <TableHead className="text-gray-300">Plan</TableHead>
-                              <TableHead className="text-gray-300">Joined</TableHead>
-                              <TableHead className="text-gray-300">Actions</TableHead>
+                              <TableHead className="text-gray-300">
+                                Name
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Email
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Plan
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Joined
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Actions
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {allUsers.map((userProfile) => (
-                              <TableRow key={userProfile.id} className="border-white/10">
-                                <TableCell className="text-white">{userProfile.full_name}</TableCell>
-                                <TableCell className="text-gray-300">{userProfile.email}</TableCell>
-                                <TableCell>
-                                  {getSubscriptionBadge(userProfile.subscription_status, userProfile.subscription_plan)}
+                              <TableRow
+                                key={userProfile.id}
+                                className="border-white/10"
+                              >
+                                <TableCell className="text-white">
+                                  {userProfile.full_name}
                                 </TableCell>
                                 <TableCell className="text-gray-300">
-                                  {new Date(userProfile.created_at).toLocaleDateString()}
+                                  {userProfile.email}
+                                </TableCell>
+                                <TableCell>
+                                  {getSubscriptionBadge(
+                                    userProfile.subscription_status,
+                                    userProfile.subscription_plan
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-gray-300">
+                                  {new Date(
+                                    userProfile.created_at
+                                  ).toLocaleDateString()}
                                 </TableCell>
                                 <TableCell>
                                   <Button
-                                    onClick={() => deleteUser(userProfile.user_id)}
+                                    onClick={() =>
+                                      deleteUser(userProfile.user_id)
+                                    }
                                     size="sm"
                                     variant="outline"
                                     className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
@@ -318,16 +441,19 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                     </div>
                   </TabsContent>
                 )}
-                
+
                 <TabsContent value="billing">
                   <div className="space-y-4">
                     <div className="bg-white/5 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-2">Billing Information</h3>
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Billing Information
+                      </h3>
                       <p className="text-gray-400">
-                        Your billing is managed through Paddle. All charges will appear as "Paddle" on your statement.
+                        Your billing is managed through Paddle. All charges will
+                        appear as "Paddle" on your statement.
                       </p>
                     </div>
-                    
+
                     <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
                       Manage Billing
                     </Button>

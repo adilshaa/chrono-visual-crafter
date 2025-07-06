@@ -1,9 +1,18 @@
-
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Play, Square, RotateCcw, Download, Image, Loader2, Pause, PlayIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Play,
+  Square,
+  RotateCcw,
+  Download,
+  Image,
+  Loader2,
+  Pause,
+  PlayIcon,
+  Film,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 interface RecordingControlsProps {
   isRecording: boolean;
@@ -30,10 +39,10 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
   onDownloadGif,
   recordedChunksLength,
   isGeneratingGif,
-  onCancelGif
+  onCancelGif,
 }) => {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex items-center gap-4"
@@ -41,36 +50,44 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
       {/* Recording Controls */}
       <div className="flex items-center gap-3">
         {!isRecording ? (
-          <Button 
+          <Button
             onClick={onStart}
             size="icon"
             className="w-14 h-14 rounded-full bg-red-600/90 hover:bg-red-700 text-white shadow-lg hover:shadow-red-500/25 transition-all duration-200 border-0"
+            aria-label="Start recording"
           >
             <Play className="w-6 h-6" />
           </Button>
         ) : (
           <div className="flex items-center gap-3">
-            <Button 
+            <Button
               onClick={onPause}
               size="icon"
               className="w-12 h-12 rounded-full bg-[#2BA6FF]/90 hover:bg-[#2BA6FF] text-white shadow-lg border-0"
+              aria-label={isPaused ? "Resume recording" : "Pause recording"}
             >
-              {isPaused ? <PlayIcon className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+              {isPaused ? (
+                <PlayIcon className="w-5 h-5" />
+              ) : (
+                <Pause className="w-5 h-5" />
+              )}
             </Button>
-            <Button 
+            <Button
               onClick={onStop}
               size="icon"
               className="w-12 h-12 rounded-full bg-red-600/90 hover:bg-red-700 text-white shadow-lg border-0"
+              aria-label="Stop recording"
             >
               <Square className="w-5 h-5" />
             </Button>
           </div>
         )}
-        
-        <Button 
+
+        <Button
           onClick={onRestart}
           size="icon"
           className="w-12 h-12 rounded-full bg-gray-700/90 hover:bg-gray-600 text-white shadow-lg border-0"
+          aria-label="Reset counter"
         >
           <RotateCcw className="w-5 h-5" />
         </Button>
@@ -81,7 +98,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
         <div className="flex items-center gap-2">
           {isRecording && (
             <Badge className="bg-red-600/90 text-white animate-pulse border-0 px-3 py-1">
-              {isPaused ? 'PAUSED' : 'REC'}
+              {isPaused ? "PAUSED" : "REC"}
             </Badge>
           )}
           {recordedChunksLength > 0 && !isRecording && (
@@ -94,27 +111,46 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
 
       {/* Export Controls */}
       <div className="flex items-center gap-3">
-        <Button 
-          onClick={onDownloadVideo}
-          disabled={recordedChunksLength === 0}
-          size="icon"
-          className="w-12 h-12 rounded-full bg-blue-600/90 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg border-0"
-        >
-          <Download className="w-5 h-5" />
-        </Button>
-        
-        <Button 
-          onClick={onDownloadGif}
-          disabled={recordedChunksLength === 0 || isGeneratingGif}
-          size="icon"
-          className="w-12 h-12 rounded-full bg-purple-600/90 hover:bg-purple-700 disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg border-0"
-        >
-          {isGeneratingGif ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Image className="w-5 h-5" />
-          )}
-        </Button>
+        <div className="relative group">
+          <Button
+            onClick={onDownloadVideo}
+            disabled={recordedChunksLength === 0}
+            className="w-auto h-12 px-4 rounded-full bg-blue-600/90 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg border-0 flex items-center gap-2"
+            aria-label="Export as WebM video"
+          >
+            <Film className="w-4 h-4" />
+            <span>Export Video</span>
+          </Button>
+          <div className="absolute -bottom-8 left-0 right-0 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity text-blue-300">
+            Supports transparency
+          </div>
+        </div>
+
+        <div className="relative group">
+          <Button
+            onClick={isGeneratingGif ? onCancelGif : onDownloadGif}
+            disabled={recordedChunksLength === 0 && !isGeneratingGif}
+            className="w-auto h-12 px-4 rounded-full bg-purple-600/90 hover:bg-purple-700 disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg border-0 flex items-center gap-2"
+            aria-label={
+              isGeneratingGif ? "Cancel GIF generation" : "Export as GIF"
+            }
+          >
+            {isGeneratingGif ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Image className="w-4 h-4" />
+                <span>Export GIF</span>
+              </>
+            )}
+          </Button>
+          <div className="absolute -bottom-8 left-0 right-0 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity text-purple-300">
+            Optimized for web
+          </div>
+        </div>
       </div>
     </motion.div>
   );
