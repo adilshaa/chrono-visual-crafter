@@ -625,14 +625,72 @@ All colors MUST be HSL.
     width: 0;
     opacity: 0;
   }
+  20% {
+    opacity: 1;
+  }
   100% {
     width: 100%;
     opacity: 1;
   }
 }
 
+/* Update flow animation with the exact approach from the reference code */
+:root {
+  --transition-speed: 400ms;
+}
+
+.digit-sequence {
+  transform: translate3d(0, -90%, 0);
+  transition: transform var(--transition-speed, 400ms)
+      cubic-bezier(0.86, 0, 0.07, 1),
+    width var(--transition-speed, 400ms) ease-in-out,
+    opacity var(--transition-speed, 200ms) ease-in-out;
+}
+
+.digit-sequence.is-hidden {
+  width: 0.02em;
+  opacity: 0;
+}
+
+/* Keep the existing flow animation for the preview */
+@keyframes flow {
+  0% {
+    transform: translateY(0);
+  }
+  10% {
+    transform: translateY(-10%);
+  }
+  20% {
+    transform: translateY(-20%);
+  }
+  30% {
+    transform: translateY(-30%);
+  }
+  40% {
+    transform: translateY(-40%);
+  }
+  50% {
+    transform: translateY(-50%);
+  }
+  60% {
+    transform: translateY(-60%);
+  }
+  70% {
+    transform: translateY(-70%);
+  }
+  80% {
+    transform: translateY(-80%);
+  }
+  90% {
+    transform: translateY(-90%);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
 .animate-fade-in {
-  animation: fadeIn 2s ease-in-out infinite;
+  animation: fadeIn 1s ease-in-out;
 }
 
 .animate-slide-up {
@@ -700,6 +758,14 @@ All colors MUST be HSL.
   overflow: hidden;
   white-space: nowrap;
   animation: typewriter 2s steps(15) infinite;
+}
+
+/* Update flow animation class */
+.animate-flow {
+  animation: flow 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  display: block;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Background noise effect for Hero component */

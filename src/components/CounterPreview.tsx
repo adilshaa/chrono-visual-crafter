@@ -115,6 +115,7 @@ const CounterPreview = forwardRef<HTMLCanvasElement, CounterPreviewProps>(
       return fontMap[fontKey] || '"Inter", sans-serif';
     };
 
+    // Update the flow transition effect to use the reference code approach
     const applyTransitionEffect = (
       ctx: CanvasRenderingContext2D,
       progress: number,
@@ -126,35 +127,7 @@ const CounterPreview = forwardRef<HTMLCanvasElement, CounterPreviewProps>(
       // Enhanced transition effects with better visibility
       const effects = {
         none: () => ({ x, y, opacity: 1 }),
-        slideUp: () => {
-          // Enhanced slide up with improved visibility
-          const distance = fontSize * 1.5;
-          const offset = (1 - progress) * distance;
-          // Start more visible
-          const opacity = 0.3 + progress * 0.7;
-          return { x, y: y + offset, opacity };
-        },
-        slideDown: () => {
-          // Enhanced slide down with improved visibility
-          const distance = fontSize * 1.5;
-          const offset = (1 - progress) * -distance;
-          const opacity = 0.3 + progress * 0.7;
-          return { x, y: y + offset, opacity };
-        },
-        slideLeft: () => {
-          // Enhanced slide left with improved visibility
-          const distance = counterWidth / 1.5;
-          const offset = (1 - progress) * distance;
-          const opacity = 0.3 + progress * 0.7;
-          return { x: x + offset, y, opacity };
-        },
-        slideRight: () => {
-          // Enhanced slide right with improved visibility
-          const distance = counterWidth / 1.5;
-          const offset = (1 - progress) * -distance;
-          const opacity = 0.3 + progress * 0.7;
-          return { x: x + offset, y, opacity };
-        },
+
         fadeIn: () => {
           // Enhanced fade in with better curve
           const easeInOutCubic =
@@ -163,121 +136,13 @@ const CounterPreview = forwardRef<HTMLCanvasElement, CounterPreviewProps>(
               : 1 - Math.pow(-2 * progress + 2, 3) / 2;
           return { x, y, opacity: easeInOutCubic };
         },
-        cascade: () => {
-          // New cascade effect where numbers flow through each other
-          // The new number comes from above and the old number exits below
 
-          // For the incoming number (when progress is low)
-          if (progress < 0.5) {
-            // Calculate a straight path for the incoming number
-            const entryProgress = progress * 2; // Scale to 0-1 range for first half
-
-            // Start from above with straight downward motion
-            const entryY = y - fontSize * 2 * (1 - entryProgress);
-
-            // No horizontal movement for straight cascade
-            const entryX = x;
-
-            // Gradually increase opacity
-            const opacity = 0.3 + entryProgress * 0.7;
-
-            return { x: entryX, y: entryY, opacity };
-          }
-          // For the outgoing number (when progress is high)
-          else {
-            // Calculate a straight path for the outgoing number
-            const exitProgress = (progress - 0.5) * 2; // Scale to 0-1 range for second half
-
-            // Move straight downward
-            const exitY = y + fontSize * 2 * exitProgress;
-
-            // No horizontal movement for straight cascade
-            const exitX = x;
-
-            // Gradually decrease opacity but keep somewhat visible
-            const opacity = 0.8 - exitProgress * 0.5;
-
-            return { x: exitX, y: exitY, opacity };
-          }
-        },
-        scale: () => {
-          // Enhanced scale with better minimum visibility
-          const scaleValue = 0.3 + progress * 0.7;
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.scale(scaleValue, scaleValue);
-          ctx.translate(-x, -y);
-          return { x, y, opacity: 0.3 + progress * 0.7 };
-        },
-        rotate: () => {
-          // Enhanced rotate with fade in
-          const rotation = (1 - progress) * Math.PI;
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(rotation);
-          ctx.translate(-x, -y);
-          return { x, y, opacity: 0.3 + progress * 0.7 };
-        },
         bounce: () => {
           // Enhanced bounce with more pronounced effect
           const bounceHeight = Math.sin(progress * Math.PI) * (fontSize / 2);
           return { x, y: y - bounceHeight, opacity: 1 };
         },
-        elastic: () => {
-          // Enhanced elastic with multiple oscillations
-          const p = progress < 0.5 ? progress * 2 : 1;
-          const elasticOffset =
-            Math.sin(p * Math.PI * 6) * (1 - p) * (fontSize / 3);
-          return { x, y: y + elasticOffset, opacity: 0.5 + progress * 0.5 };
-        },
-        wave: () => {
-          // Enhanced wave with smoother motion
-          const amplitude = fontSize / 4;
-          const frequency = 3;
-          const waveOffset =
-            Math.sin(progress * Math.PI * frequency) *
-            amplitude *
-            (1 - progress * 0.5);
-          return { x: x + waveOffset, y, opacity: 0.7 + progress * 0.3 };
-        },
-        spiral: () => {
-          // Enhanced spiral with more visible starting point
-          const minOpacity = 0.4;
-          const angle = progress * Math.PI * 3;
-          const startRadius = fontSize / 2;
-          const endRadius = 0;
-          const radius = startRadius + (endRadius - startRadius) * progress;
-          const spiralX = Math.cos(angle) * radius;
-          const spiralY = Math.sin(angle) * radius;
-          return {
-            x: x + spiralX,
-            y: y + spiralY,
-            opacity: minOpacity + (1 - minOpacity) * progress,
-          };
-        },
-        zoom: () => {
-          // Enhanced zoom with better visibility
-          const minScale = 0.4;
-          const scale = minScale + progress * (1 - minScale);
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.scale(scale, scale);
-          ctx.translate(-x, -y);
-          return { x, y, opacity: 0.3 + progress * 0.7 };
-        },
-        flip: () => {
-          // Enhanced flip with improved visibility at midpoint
-          const flipProgress =
-            progress < 0.5 ? progress * 2 : (progress - 0.5) * 2;
-          const scaleY = Math.abs(Math.cos(progress * Math.PI));
-          const opacity = scaleY < 0.3 ? 0.3 : scaleY;
 
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.scale(1, Math.max(0.1, scaleY));
-          ctx.translate(-x, -y);
-          return { x, y, opacity };
-        },
         glitch: () => {
           // New glitch effect
           ctx.save();
@@ -298,6 +163,11 @@ const CounterPreview = forwardRef<HTMLCanvasElement, CounterPreviewProps>(
         },
         typewriter: () => {
           // The typewriter effect is handled in text rendering
+          return { x, y, opacity: 1 };
+        },
+        flow: () => {
+          // The flow effect is handled differently in the main rendering logic
+          // This is just a placeholder to maintain the interface
           return { x, y, opacity: 1 };
         },
       };
@@ -753,42 +623,84 @@ const CounterPreview = forwardRef<HTMLCanvasElement, CounterPreviewProps>(
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      // Apply letter spacing if needed
-      if (letterSpacing !== 0) {
-        const text = formatNumber(currentValue);
+      // FLOW TRANSITION (continuous rolling digits) or letter-spacing rendering
+      if (settings.transition === "flow" || letterSpacing !== 0) {
+        // ------------------------------------------------------------------
+        // FLOW: For each numeric digit, draw the current digit and the next
+        // digit stacked vertically and shift them based on fractional
+        // progress so we get a smooth, continuous odometer-style roll.
+        // ------------------------------------------------------------------
+
+        // Helper to compute width for centering
+        const measureTextWidth = (text: string): number => {
+          let w = 0;
+          for (const ch of text) w += ctx.measureText(ch).width;
+          return w;
+        };
+
+        // String that includes prefix/suffix/separators so layout is correct
+        const formatted = formatNumber(currentValue);
+
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
 
-        // Draw each character separately with spacing
-        let totalWidth = 0;
+        const totalWidth = measureTextWidth(formatted);
+        let startX = centerX - totalWidth / 2;
 
-        // First calculate total width with spacing
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          const charWidth = ctx.measureText(char).width;
-          totalWidth += charWidth + (i < text.length - 1 ? letterSpacing : 0);
-        }
+        // We’ll need digitHeight for vertical offset
+        const digitHeight = settings.fontSize * 1.2;
 
-        // Now draw each character centered
-        let currentX = centerX - totalWidth / 2;
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          const charWidth = ctx.measureText(char).width;
+        // Iterate over every character in the formatted string
+        for (let i = 0; i < formatted.length; i++) {
+          const ch = formatted[i];
+          const charWidth = ctx.measureText(ch).width;
+          const charX = startX + charWidth / 2;
 
-          // Apply design effects to each character
-          if (settings.design !== "classic") {
-            applyDesignEffects(
-              ctx,
-              char,
-              currentX + charWidth / 2,
-              centerY,
-              settings.fontSize
-            );
+          if (/\d/.test(ch)) {
+            // Determine place value (units, tens, hundreds …) counting from
+            // the rightmost digit.
+            const placeIndexFromRight =
+              formatted.slice(0, i + 1).replace(/[^0-9]/g, "").length - 1; // numeric chars so far
+
+            const placeValue = Math.pow(10, placeIndexFromRight);
+
+            // Current digit and fractional progress toward next digit
+            const absoluteValue = currentValue / placeValue;
+            const digitProgress = absoluteValue % 1; // 0 → almost 1
+
+            const currentDigit = Math.floor(absoluteValue) % 10;
+            const nextDigit = (currentDigit + 1) % 10;
+
+            // Vertical offset: progress * digitHeight (scrolling up)
+            const yOffset = digitProgress * digitHeight;
+
+            // Draw current digit
+            const drawDigit = (digit: number, offset: number) => {
+              if (settings.design !== "classic") {
+                applyDesignEffects(
+                  ctx,
+                  String(digit),
+                  charX,
+                  centerY - offset,
+                  settings.fontSize
+                );
+              } else {
+                ctx.fillText(String(digit), charX, centerY - offset);
+              }
+            };
+
+            drawDigit(currentDigit, yOffset);
+            drawDigit(nextDigit, yOffset - digitHeight);
           } else {
-            ctx.fillText(char, currentX + charWidth / 2, centerY);
+            // Non-digit characters stay static
+            if (settings.design !== "classic") {
+              applyDesignEffects(ctx, ch, charX, centerY, settings.fontSize);
+            } else {
+              ctx.fillText(ch, charX, centerY);
+            }
           }
 
-          currentX += charWidth + letterSpacing;
+          startX += charWidth;
         }
       } else {
         // Normal text rendering without letter spacing
