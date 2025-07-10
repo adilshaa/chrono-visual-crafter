@@ -18,17 +18,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   // Debug environment variables
-  console.log("App Environment Check:");
-  console.log("NODE_ENV:", import.meta.env.MODE);
-  console.log(
-    "VITE_CLERK_PUBLISHABLE_KEY exists:",
-    !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-  );
-  console.log("VITE_SUPABASE_URL exists:", !!import.meta.env.VITE_SUPABASE_URL);
-  console.log(
-    "VITE_PADDLE_CLIENT_TOKEN exists:",
-    !!import.meta.env.VITE_PADDLE_CLIENT_TOKEN
-  );
+
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -29,11 +29,27 @@ import {
   CreditCard as BillingIcon,
   ShieldAlert,
   X,
+  AlertTriangle,
+  RefreshCw,
+  Zap,
+  AlertCircle,
 } from "lucide-react";
 import { StudioBackground } from "@/components/ui/studio-background";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  validateSubscription,
+  cancelSubscription,
+  reactivateSubscription,
+  retryBilling,
+  updateSubscriptionInSupabase as updateSupabaseSubscription,
+  isSubscriptionExpired,
+  getDaysUntilExpiry,
+} from "@/api/subscriptions";
+import { usePaddle } from "@/components/payments/PaddleProvider";
 
 interface UserProfileProps {
   open: boolean;
@@ -47,36 +63,139 @@ interface SubscriptionDetails {
   cancel_at_period_end?: boolean;
   status?: string;
   plan?: string;
+  paddle_subscription_id?: string;
+  is_expired?: boolean;
+  days_until_expiry?: number;
+}
+
+// Interface for Paddle subscription data
+interface PaddleSubscription {
+  id: string;
+  status: string;
+  current_billing_period: {
+    starts_at: string;
+    ends_at: string;
+  };
+  next_billing_period?: {
+    starts_at: string;
+    ends_at: string;
+  };
+  cancel_at_period_end: boolean;
 }
 
 const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useClerkAuth();
   const { theme } = useTheme();
+  const { toast } = useToast();
+  const { cancelSubscriptionAPI } = usePaddle();
   const isDark = theme === "dark";
   const [activeTab, setActiveTab] = useState("overview");
   const [subscriptionDetails, setSubscriptionDetails] =
     useState<SubscriptionDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
+  const [paddleSubscription, setPaddleSubscription] =
+    useState<PaddleSubscription | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
 
-  // Fetch subscription details from Supabase
+  // Fetch subscription details from Supabase and validate with Paddle
   useEffect(() => {
     const fetchSubscriptionDetails = async () => {
       if (!user) return;
 
       setIsLoading(true);
       try {
-        // "subscription_details" is not a typed table in your Supabase types, so use "user_subscriptions" instead
-        const { data, error } = await supabase
+        const { data: userSubscriptions, error } = await supabase
           .from("user_subscriptions")
           .select(
-            "current_period_end"
+            "plan_id,current_period_end,status,paddle_subscription_id,created_at"
           )
           .eq("user_id", user.id)
-          .single();
-        console.log(data, "data");
-        if (error) throw error;
-        setSubscriptionDetails(data as SubscriptionDetails);
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (error) {
+          console.error("Error fetching user subscriptions:", error);
+          setIsLoading(false);
+          return;
+        }
+        console.log("userSubscriptions", userSubscriptions);
+
+        const userSubscription =
+          userSubscriptions &&
+          Array.isArray(userSubscriptions) &&
+          userSubscriptions.length > 0
+            ? userSubscriptions[0]
+            : null;
+
+        // Type guard to ensure userSubscription is not null and has the expected properties
+        if (!userSubscription) {
+          console.log("No subscription found for user");
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if all required properties exist
+        if (
+          !("plan_id" in userSubscription) ||
+          !("current_period_end" in userSubscription) ||
+          !("status" in userSubscription) ||
+          !("paddle_subscription_id" in userSubscription)
+        ) {
+          console.error(
+            "Subscription is missing required fields",
+            userSubscription
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        // TypeScript type assertion to help with type safety
+        const typedSubscription = userSubscription as {
+          plan_id: string;
+          current_period_end: string;
+          status: string;
+          paddle_subscription_id: string;
+        };
+
+        let plan: any = null;
+        if (typedSubscription.plan_id) {
+          const { data: planData, error: planError } = await supabase
+            .from("subscription_plans")
+            .select("*")
+            .eq("paddle_product_id", typedSubscription.plan_id)
+            .single();
+          if (planError) {
+            console.error("Error fetching plan:", planError);
+          }
+          plan = planData;
+        }
+
+        const details: SubscriptionDetails = {
+          current_period_end: typedSubscription.current_period_end,
+          status: typedSubscription.status,
+          plan: plan?.name ?? null,
+          paddle_subscription_id: typedSubscription.paddle_subscription_id,
+        };
+
+        // Check if subscription is expired
+        if (details.current_period_end) {
+          const expiryDate = new Date(details.current_period_end);
+          const now = new Date();
+          details.is_expired = expiryDate < now;
+          details.days_until_expiry = Math.ceil(
+            (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          );
+        }
+
+        setSubscriptionDetails(details);
+
+        // If user has a Paddle subscription ID, fetch latest data from Paddle
+        if (details.paddle_subscription_id) {
+          await validateWithPaddle(details.paddle_subscription_id);
+        }
       } catch (error) {
         console.error("Error fetching subscription details:", error);
       } finally {
@@ -84,10 +203,268 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
       }
     };
 
+    const fetchPaymentHistory = async () => {
+      if (!user) return;
+      // Replace 'payment_history' with your actual table name if different
+      const { data, error } = await supabase
+        .from("user_subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("Error fetching payment history:", error);
+        setPaymentHistory([]);
+      } else {
+        setPaymentHistory(data || []);
+      }
+    };
+
     if (open && user) {
       fetchSubscriptionDetails();
+      fetchPaymentHistory();
     }
   }, [user, open]);
+
+  // Validate subscription with Paddle API
+  const validateWithPaddle = async (subscriptionId: string) => {
+    try {
+      setIsValidating(true);
+
+      // Call your backend API to fetch Paddle subscription data
+      const response = await fetch(
+        `/api/subscriptions/${subscriptionId}/validate`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const paddleData: PaddleSubscription = await response.json();
+        setPaddleSubscription(paddleData);
+        console.log("paddleData", paddleData);
+
+        // Update local subscription details with Paddle data
+        setSubscriptionDetails((prev) =>
+          prev
+            ? {
+                ...prev,
+                current_period_end: paddleData.current_billing_period.ends_at,
+                next_invoice_date: paddleData.next_billing_period?.starts_at,
+                cancel_at_period_end: paddleData.cancel_at_period_end,
+                status: paddleData.status,
+                is_expired:
+                  new Date(paddleData.current_billing_period.ends_at) <
+                  new Date(),
+                days_until_expiry: Math.ceil(
+                  (new Date(
+                    paddleData.current_billing_period.ends_at
+                  ).getTime() -
+                    new Date().getTime()) /
+                    (1000 * 60 * 60 * 24)
+                ),
+              }
+            : null
+        );
+
+        // Update Supabase if there are discrepancies
+        await updateSubscriptionInSupabase(paddleData);
+
+        toast({
+          title: "Subscription Validated",
+          description:
+            "Your subscription status has been updated with the latest information.",
+        });
+      } else {
+        throw new Error("Failed to validate subscription");
+      }
+    } catch (error) {
+      console.error("Error validating subscription with Paddle:", error);
+      toast({
+        title: "Validation Error",
+        description: "Unable to validate subscription. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Update subscription data in Supabase
+  const updateSubscriptionInSupabase = async (
+    paddleData: PaddleSubscription
+  ) => {
+    try {
+      const { error } = await supabase
+        .from("user_subscriptions")
+        .update({
+          current_period_start: paddleData.current_billing_period.starts_at,
+          current_period_end: paddleData.current_billing_period.ends_at,
+          status: paddleData.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("subscription_id", paddleData.id);
+
+      if (error) {
+        console.error("Error updating subscription in Supabase:", error);
+      }
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+    }
+  };
+
+  // Handle subscription cancellation
+  const handleCancelSubscription = async () => {
+    if (!subscriptionDetails?.paddle_subscription_id) {
+      toast({
+        title: "Error",
+        description: "No subscription found to cancel.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsCanceling(true);
+
+      // Use the cancelSubscriptionAPI method from PaddleProvider
+      const success = await cancelSubscriptionAPI(
+        subscriptionDetails.paddle_subscription_id
+      );
+
+      if (success) {
+        // Refresh subscription details
+        setSubscriptionDetails((prev) =>
+          prev
+            ? {
+                ...prev,
+                cancel_at_period_end: true,
+              }
+            : null
+        );
+      }
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      toast({
+        title: "Cancellation Error",
+        description: "Unable to cancel subscription. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
+  // Handle subscription reactivation
+  const handleReactivateSubscription = async () => {
+    if (!subscriptionDetails?.paddle_subscription_id) {
+      toast({
+        title: "Error",
+        description: "No subscription found to reactivate.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsCanceling(true);
+
+      // Call your backend API to reactivate subscription
+      const response = await fetch(
+        `/api/subscriptions/${subscriptionDetails.paddle_subscription_id}/reactivate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        toast({
+          title: "Subscription Reactivated",
+          description: "Your subscription has been reactivated successfully.",
+        });
+
+        // Refresh subscription details
+        setSubscriptionDetails((prev) =>
+          prev
+            ? {
+                ...prev,
+                cancel_at_period_end: false,
+              }
+            : null
+        );
+      } else {
+        throw new Error("Failed to reactivate subscription");
+      }
+    } catch (error) {
+      console.error("Error reactivating subscription:", error);
+      toast({
+        title: "Reactivation Error",
+        description:
+          "Unable to reactivate subscription. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
+  // Handle billing retry for expired subscriptions
+  const handleRetryBilling = async () => {
+    if (!subscriptionDetails?.paddle_subscription_id) {
+      toast({
+        title: "Error",
+        description: "No subscription found to retry billing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsValidating(true);
+
+      // Call your backend API to retry billing
+      const response = await fetch(
+        `/api/subscriptions/${subscriptionDetails.paddle_subscription_id}/retry-billing`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        toast({
+          title: "Billing Retry Initiated",
+          description:
+            "We've initiated a retry of your payment. You'll be notified of the result.",
+        });
+
+        // Refresh subscription details after a delay
+        setTimeout(() => {
+          if (subscriptionDetails.paddle_subscription_id) {
+            validateWithPaddle(subscriptionDetails.paddle_subscription_id);
+          }
+        }, 5000);
+      } else {
+        throw new Error("Failed to retry billing");
+      }
+    } catch (error) {
+      console.error("Error retrying billing:", error);
+      toast({
+        title: "Billing Retry Error",
+        description: "Unable to retry billing. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -153,12 +530,30 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Get subscription status color and text
+  const getSubscriptionStatusInfo = () => {
+    if (!subscriptionDetails) return { color: "gray", text: "Unknown" };
+
+    const status = subscriptionDetails.status?.toLowerCase();
+    const isExpired = subscriptionDetails.is_expired;
+
+    if (isExpired) return { color: "red", text: "Expired" };
+    if (status === "active") return { color: "green", text: "Active" };
+    if (status === "canceled") return { color: "orange", text: "Canceled" };
+    if (status === "past_due") return { color: "red", text: "Past Due" };
+    if (status === "paused") return { color: "yellow", text: "Paused" };
+
+    return { color: "gray", text: status || "Unknown" };
+  };
+
+  const statusInfo = getSubscriptionStatusInfo();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl p-0 h-[85vh] max-h-[700px] overflow-hidden bg-[#101010]">
-        <div className="flex h-full">
+      <DialogContent className="max-w-6xl p-0 h-[85vh] max-h-[700px] bg-[#101010]">
+        <div className="flex h-full min-h-0">
           {/* Sidebar */}
-          <div className="w-64 border-r border-white/[0.08] flex flex-col bg-[#101010] backdrop-blur-sm">
+          <div className="w-64 flex-shrink-0 border-r border-white/[0.08] flex flex-col bg-[#101010] backdrop-blur-sm">
             {/* User info */}
             <div className="p-6 border-b border-white/[0.08]">
               <div className="flex items-center gap-3">
@@ -215,8 +610,8 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
             </div>
           </div>
 
-          {/* Content Area - Fixed scrolling issue */}
-          <div className="flex-1 overflow-y-auto relative bg-[#101010] custom-scrollbar">
+          {/* Main Content */}
+          <div className="flex-1 min-w-0 overflow-y-auto relative bg-[#101010] custom-scrollbar">
             {/* Close button */}
             <DialogClose className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all">
               {/* <X className="w-4 h-4" /> */}
@@ -229,6 +624,46 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
                   <h2 className="text-xl font-semibold text-white">
                     Account Overview
                   </h2>
+
+                  {/* Subscription Status Alert */}
+                  {subscriptionDetails && (
+                    <Alert
+                      className={cn(
+                        "border",
+                        subscriptionDetails.is_expired
+                          ? "border-red-500/30 bg-red-500/10"
+                          : subscriptionDetails.status === "past_due"
+                          ? "border-orange-500/30 bg-orange-500/10"
+                          : "border-green-500/30 bg-green-500/10"
+                      )}
+                    >
+                      <AlertTriangle
+                        className={cn(
+                          "h-4 w-4",
+                          subscriptionDetails.is_expired
+                            ? "text-red-400"
+                            : subscriptionDetails.status === "past_due"
+                            ? "text-orange-400"
+                            : "text-green-400"
+                        )}
+                      />
+                      <AlertDescription
+                        className={cn(
+                          subscriptionDetails.is_expired
+                            ? "text-red-300"
+                            : subscriptionDetails.status === "past_due"
+                            ? "text-orange-300"
+                            : "text-green-300"
+                        )}
+                      >
+                        {subscriptionDetails.is_expired
+                          ? "Your subscription has expired. Please update your payment method to continue using premium features."
+                          : subscriptionDetails.status === "past_due"
+                          ? "Your payment is past due. Please update your payment method to avoid service interruption."
+                          : "Your subscription is active and up to date."}
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   {/* Account Information */}
                   <Card className="bg-[#151515] border border-white/[0.08] shadow-lg backdrop-blur-sm overflow-hidden">
@@ -299,31 +734,116 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
                     </CardHeader>
 
                     <CardContent className="relative z-10 pt-0">
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-[#181818] border border-white/[0.08]">
-                        <div>
-                          <h3 className="font-medium text-white">
-                            {(profile?.subscription_plan || "Free")
-                              .charAt(0)
-                              .toUpperCase() +
-                              (profile?.subscription_plan || "Free").slice(
-                                1
-                              )}{" "}
-                            Plan
-                          </h3>
-                          <p className="text-sm text-white/50">
-                            {profile?.subscription_plan === "Free"
-                              ? "Limited features"
-                              : "Full access to all features"}
-                          </p>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#181818] border border-white/[0.08]">
+                          <div>
+                            <h3 className="font-medium text-white">
+                              {(profile?.subscription_plan || "Free")
+                                .charAt(0)
+                                .toUpperCase() +
+                                (profile?.subscription_plan || "Free").slice(
+                                  1
+                                )}{" "}
+                              Plan
+                            </h3>
+                            <p className="text-sm text-white/50">
+                              {profile?.subscription_plan === "Free"
+                                ? "Limited features"
+                                : "Full access to all features"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "border",
+                                statusInfo.color === "green"
+                                  ? "border-green-500/30 text-green-400"
+                                  : statusInfo.color === "red"
+                                  ? "border-red-500/30 text-red-400"
+                                  : statusInfo.color === "orange"
+                                  ? "border-orange-500/30 text-orange-400"
+                                  : statusInfo.color === "yellow"
+                                  ? "border-yellow-500/30 text-yellow-400"
+                                  : "border-gray-500/30 text-gray-400"
+                              )}
+                            >
+                              {statusInfo.text}
+                            </Badge>
+                            <Button
+                              onClick={() => navigate("/pricing")}
+                              className="bg-[#2c2c2c] hover:bg-[#3a3a3a] text-white border-none"
+                            >
+                              {profile?.subscription_plan === "Free"
+                                ? "Upgrade Plan"
+                                : "Manage Plan"}
+                            </Button>
+                          </div>
                         </div>
-                        <Button
-                          onClick={() => navigate("/pricing")}
-                          className="bg-[#2c2c2c] hover:bg-[#3a3a3a] text-white border-none"
-                        >
-                          {profile?.subscription_plan === "Free"
-                            ? "Upgrade Plan"
-                            : "Manage Plan"}
-                        </Button>
+
+                        {/* Subscription Actions */}
+                        {subscriptionDetails &&
+                          subscriptionDetails.paddle_subscription_id && (
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() =>
+                                  validateWithPaddle(
+                                    subscriptionDetails.paddle_subscription_id!
+                                  )
+                                }
+                                disabled={isValidating}
+                                variant="outline"
+                                size="sm"
+                                className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                              >
+                                {isValidating ? (
+                                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Zap className="w-4 h-4 mr-2" />
+                                )}
+                                {isValidating
+                                  ? "Validating..."
+                                  : "Refresh Status"}
+                              </Button>
+
+                              {subscriptionDetails.is_expired && (
+                                <Button
+                                  onClick={handleRetryBilling}
+                                  disabled={isValidating}
+                                  size="sm"
+                                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                                >
+                                  <AlertCircle className="w-4 h-4 mr-2" />
+                                  Retry Payment
+                                </Button>
+                              )}
+
+                              {subscriptionDetails.cancel_at_period_end ? (
+                                <Button
+                                  onClick={handleReactivateSubscription}
+                                  disabled={isCanceling}
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  {isCanceling
+                                    ? "Reactivating..."
+                                    : "Reactivate"}
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={handleCancelSubscription}
+                                  disabled={isCanceling}
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400"
+                                >
+                                  {isCanceling
+                                    ? "Canceling..."
+                                    : "Cancel Subscription"}
+                                </Button>
+                              )}
+                            </div>
+                          )}
                       </div>
                     </CardContent>
                   </Card>
@@ -531,14 +1051,49 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
                             </p>
                           </div>
 
+                          {/* Expiry Warning */}
+                          {subscriptionDetails?.is_expired && (
+                            <Alert className="border-red-500/30 bg-red-500/10">
+                              <AlertTriangle className="h-4 w-4 text-red-400" />
+                              <AlertDescription className="text-red-300">
+                                Your subscription expired on{" "}
+                                {formatDate(
+                                  subscriptionDetails.current_period_end
+                                )}
+                                . Please update your payment method to continue
+                                using premium features.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+
+                          {/* Days until expiry warning */}
+                          {subscriptionDetails?.days_until_expiry !==
+                            undefined &&
+                            subscriptionDetails.days_until_expiry <= 7 &&
+                            subscriptionDetails.days_until_expiry > 0 && (
+                              <Alert className="border-orange-500/30 bg-orange-500/10">
+                                <AlertTriangle className="h-4 w-4 text-orange-400" />
+                                <AlertDescription className="text-orange-300">
+                                  Your subscription will expire in{" "}
+                                  {subscriptionDetails.days_until_expiry} days.
+                                  Please ensure your payment method is up to
+                                  date.
+                                </AlertDescription>
+                              </Alert>
+                            )}
+
                           <div className="flex justify-end mt-2">
                             <Button
                               variant="outline"
                               size="sm"
                               className="border-white/20 bg-white/5 hover:bg-white/10 text-white mr-2"
+                              onClick={handleCancelSubscription}
+                              disabled={isCanceling}
                             >
                               {subscriptionDetails?.cancel_at_period_end
                                 ? "Resume Subscription"
+                                : isCanceling
+                                ? "Canceling..."
                                 : "Cancel Subscription"}
                             </Button>
                             <Button
@@ -595,26 +1150,55 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {/* This would be populated from Supabase */}
-                                <tr className="border-b border-white/5">
-                                  <td className="py-3 text-sm text-white/80">
-                                    INV-001
-                                  </td>
-                                  <td className="py-3 text-sm text-white/80">
-                                    {new Date().toLocaleDateString()}
-                                  </td>
-                                  <td className="py-3 text-sm text-white/80">
-                                    {profile?.subscription_plan} Plan
-                                  </td>
-                                  <td className="py-3 text-sm text-white/80">
-                                    $19.99
-                                  </td>
-                                  <td className="py-3">
-                                    <span className="text-xs bg-emerald-500/20 text-emerald-400 py-1 px-2 rounded-full">
-                                      Paid
-                                    </span>
-                                  </td>
-                                </tr>
+                                {paymentHistory.length > 0 ? (
+                                  paymentHistory.map((payment, idx) => (
+                                    <tr
+                                      key={payment.id || idx}
+                                      className="border-b border-white/5"
+                                    >
+                                      <td className="py-3 text-sm text-white/80">
+                                        {payment.invoice_number || payment.id}
+                                      </td>
+                                      <td className="py-3 text-sm text-white/80">
+                                        {payment.created_at
+                                          ? new Date(
+                                              payment.created_at
+                                            ).toLocaleDateString()
+                                          : "N/A"}
+                                      </td>
+                                      <td className="py-3 text-sm text-white/80">
+                                        {payment.plan_name ||
+                                          payment.plan ||
+                                          "-"}
+                                      </td>
+                                      <td className="py-3 text-sm text-white/80">
+                                        {payment.amount
+                                          ? `$${payment.amount}`
+                                          : "-"}
+                                      </td>
+                                      <td className="py-3">
+                                        <span
+                                          className={`text-xs py-1 px-2 rounded-full ${
+                                            payment.status === "paid"
+                                              ? "bg-emerald-500/20 text-emerald-400"
+                                              : "bg-orange-500/20 text-orange-400"
+                                          }`}
+                                        >
+                                          {payment.status || "-"}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td
+                                      colSpan={5}
+                                      className="py-6 text-center text-white/60"
+                                    >
+                                      No payment history found
+                                    </td>
+                                  </tr>
+                                )}
                               </tbody>
                             </table>
                           </div>
