@@ -72,7 +72,7 @@ export class VideoExportManager {
       alpha: settings.background === 'transparent',
       premultipliedAlpha: false,
       preserveDrawingBuffer: true
-    });
+    }) as CanvasRenderingContext2D;
 
     if (!ctx) return;
 
@@ -88,11 +88,11 @@ export class VideoExportManager {
     // Configure context for better quality
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.textRenderingOptimization = 'optimizeQuality';
+    (ctx as any).textRenderingOptimization = 'optimizeQuality';
   }
 
   static validateEffectBoundaries(canvas: HTMLCanvasElement, settings: any): boolean {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
     if (!ctx) return false;
 
     // Check if effects are properly contained within canvas bounds

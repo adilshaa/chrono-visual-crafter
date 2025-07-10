@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Paddle API configuration
@@ -150,18 +151,16 @@ export const updateSubscriptionInSupabase = async (
 };
 
 // Get subscription details from Supabase
-export const getSubscriptionFromSupabase = async (userId: string) => {
+export const getSubscriptionFromSupabase = async (userId: string): Promise<any> => {
   try {
     const { data, error } = await supabase
       .from("user_subscriptions")
-      .select(
-        `
+      .select(`
         current_period_end,
         status,
         paddle_subscription_id,
         subscription_plans:plan_id(name)
-      `
-      )
+      `)
       .eq("user_id", userId)
       .single();
 

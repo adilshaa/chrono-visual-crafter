@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -118,7 +119,7 @@ export function StudioBackground({
         rotate={rotate}
         delay={delay}
         gradient={gradient}
-        className={`absolute top-[${top}] left-[${left}]`}
+        className={`absolute`}
         style={{ top, left }}
       />
     );
@@ -133,19 +134,28 @@ export function StudioBackground({
       {animated && (
         <div className="absolute inset-0">
           {shapes.map((shape, i) => (
-            <FloatingShape
+            <div
               key={i}
-              width={shape.props.width}
-              height={shape.props.height}
-              rotate={shape.props.rotate}
-              delay={shape.props.delay}
-              gradient={shape.props.gradient}
-              className={`absolute`}
+              className="absolute"
               style={{
-                top: shape.props.style?.top,
-                left: shape.props.style?.left,
+                top: `${Math.floor(Math.random() * 90)}%`,
+                left: `${Math.floor(Math.random() * 90)}%`,
               }}
-            />
+            >
+              <FloatingShape
+                width={100 + Math.floor(Math.random() * 300)}
+                height={50 + Math.floor(Math.random() * 150)}
+                rotate={Math.floor(Math.random() * 60) - 30}
+                delay={i * 0.2}
+                gradient={[
+                  "from-indigo-500/[0.08] to-transparent",
+                  "from-rose-500/[0.08] to-transparent",
+                  "from-violet-500/[0.08] to-transparent",
+                  "from-blue-500/[0.08] to-transparent",
+                  "from-cyan-500/[0.08] to-transparent",
+                ][Math.floor(Math.random() * 5)]}
+              />
+            </div>
           ))}
         </div>
       )}

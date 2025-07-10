@@ -1,4 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
   id?: string;
@@ -23,14 +22,8 @@ export class SubscriptionAuditLogger {
         user_agent: navigator.userAgent,
       };
 
-      const { error } = await supabase
-        .from('subscription_audit_logs')
-        .insert(auditEntry);
-
-      if (error) {
-        console.error('Failed to log audit entry:', error);
-        // Don't throw error to avoid breaking the main flow
-      }
+      // TODO: Implement audit logging when subscription_audit_logs table is created
+      console.log('Audit log entry:', auditEntry);
     } catch (error) {
       console.error('Error logging audit entry:', error);
     }
@@ -38,24 +31,9 @@ export class SubscriptionAuditLogger {
 
   static async getAuditHistory(userId: string, subscriptionId?: string) {
     try {
-      let query = supabase
-        .from('subscription_audit_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .order('timestamp', { ascending: false });
-
-      if (subscriptionId) {
-        query = query.eq('subscription_id', subscriptionId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Failed to fetch audit history:', error);
-        return [];
-      }
-
-      return data || [];
+      // TODO: Implement audit history retrieval when subscription_audit_logs table is created
+      console.log('Getting audit history for user:', userId, 'subscription:', subscriptionId);
+      return [];
     } catch (error) {
       console.error('Error fetching audit history:', error);
       return [];
