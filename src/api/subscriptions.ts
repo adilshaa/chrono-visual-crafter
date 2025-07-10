@@ -124,20 +124,22 @@ export const retryBilling = async (
   }
 };
 
-// Update subscription in Supabase - simplified type annotation
+// Update subscription in Supabase - fixed type instantiation issue
 export const updateSubscriptionInSupabase = async (
   subscriptionId: string,
   paddleData: PaddleSubscription
 ): Promise<void> => {
   try {
+    const updateData = {
+      current_period_start: paddleData.current_billing_period.starts_at,
+      current_period_end: paddleData.current_billing_period.ends_at,
+      status: paddleData.status,
+      updated_at: new Date().toISOString(),
+    };
+
     const { error } = await supabase
       .from("user_subscriptions")
-      .update({
-        current_period_start: paddleData.current_billing_period.starts_at,
-        current_period_end: paddleData.current_billing_period.ends_at,
-        status: paddleData.status,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("paddle_subscription_id", subscriptionId);
 
     if (error) {
