@@ -5,6 +5,7 @@ import { useClerkAuth } from "@/hooks/useClerkAuth";
 import { useNavigate } from "react-router-dom";
 import { VideoExportManager } from "@/utils/videoExportFixes";
 import { ErrorHandler } from "@/utils/errorHandling";
+import { CounterExportManager } from "@/utils/counterExport";
 import CounterPreview from "@/components/CounterPreview";
 import RecordingControls from "@/components/RecordingControls";
 import StudioSidebar from "@/components/StudioSidebar";
@@ -348,6 +349,69 @@ const StudioContent = () => {
     setIsPreviewingVideo(false);
   };
 
+  const handleDownloadVideoNoBackground = () => {
+    // Credit gating for Free users
+    if (
+      profile?.subscription_plan === "free" &&
+      typeof profile?.credits === "number" &&
+      profile.credits <= 0
+    ) {
+      toast({
+        title: "Out of Credits",
+        description:
+          "You have reached your monthly export limit. Upgrade to Pro for unlimited exports.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const exportCounterOnly = async () => {
+      try {
+        if (!canvasRef.current) return;
+
+        const blob = await CounterExportManager.exportCounterOnly({
+          canvas: canvasRef.current,
+          settings: counterSettings,
+          textSettings,
+          designSettings,
+          duration: counterSettings.duration,
+          currentValue,
+          formatNumber,
+          fps: 60
+        });
+
+        await CounterExportManager.downloadCounterVideo(
+          blob,
+          `counter-only-${Date.now()}`
+        );
+
+        toast({
+          title: "Counter Video Downloaded",
+          description: "Your counter and text video has been saved with transparent background.",
+        });
+
+        // Decrement credits for free users
+        if (
+          profile?.subscription_plan === "free" &&
+          typeof profile?.credits === "number" &&
+          profile.credits > 0
+        ) {
+          updateProfile({ credits: profile.credits - 1 });
+          refreshProfile();
+        }
+      } catch (error) {
+        console.error('Counter export failed:', error);
+        toast({
+          title: "Export Failed",
+          description: "An error occurred while exporting the counter.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    exportCounterOnly();
+  };
+
   const handleDownloadVideo = () => {
     // Credit gating for Free users
     if (
@@ -437,140 +501,47 @@ const StudioContent = () => {
     setCancelGifGeneration(false);
 
     try {
-      const gif = new GIF({
-        workers: 4,
-        quality: 15,
-        width: 800,
-        height: 600,
-        workerScript:
-          "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js",
-        transparent:
-          counterSettings.background === "transparent" ? 0x00000000 : null,
-        background:
-          counterSettings.background === "transparent"
-            ? 0x00000000
-            : counterSettings.background === "white"
-            ? 0xffffff
-            : 0x000000,
-      });
-
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      const frameCount = Math.min(60, counterSettings.duration * 10);
-      const delay = Math.max(
-        50,
-        (counterSettings.duration * 1000) / frameCount
+      const blob = await CounterExportManager.exportGifWithFFmpeg(
+        canvasRef.current,
+        {
+          canvas: canvasRef.current,
+          settings: counterSettings,
+          textSettings,
+          designSettings,
+          duration: counterSettings.duration,
+          currentValue,
+          formatNumber,
+          fps: 30
+        },
+        (progress: number) => {
+          toast({
+            title: "Generating GIF",
+            description: `Progress: ${Math.round(progress * 100)}%`,
+          });
+        },
+        () => cancelGifGeneration
       );
 
-      let frameIndex = 0;
-
-      const addFrame = () => {
-        if (cancelGifGeneration) {
-          setIsGeneratingGif(false);
-          setCancelGifGeneration(false);
-          return;
-        }
-
-        if (frameIndex >= frameCount) {
-          gif.render();
-          return;
-        }
-
-        const progress = frameIndex / (frameCount - 1);
-        const value =
-          counterSettings.startValue +
-          (counterSettings.endValue - counterSettings.startValue) * progress;
-
-        // Clear canvas with proper transparency handling
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw background (solid or gradient)
-        if (counterSettings.background === "transparent") {
-          // nothing
-        } else if (counterSettings.background === "gradient") {
-          const extractColors = (gradientStr: string) =>
-            gradientStr.match(/#[0-9a-fA-F]{3,6}/g) || ["#000000", "#ffffff"];
-
-          const colors = extractColors(
-            (counterSettings as any).backgroundGradient || ""
-          );
-          const grad = ctx.createLinearGradient(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-          const step = colors.length > 1 ? 1 / (colors.length - 1) : 1;
-          colors.forEach((c, i) => grad.addColorStop(i * step, c));
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        } else {
-          ctx.fillStyle =
-            counterSettings.background === "white" ? "#FFFFFF" : "#000000";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        // Determine text color based on background for readability
-        const textColor =
-          counterSettings.background === "white" ? "#000000" : "#FFFFFF";
-
-        // Draw counter with proper color based on background
-        ctx.fillStyle = textColor;
-        ctx.font = `${counterSettings.fontSize}px ${counterSettings.fontFamily}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(formatNumber(value), canvas.width / 2, canvas.height / 2);
-
-        gif.addFrame(canvas, { delay, copy: true });
-        frameIndex++;
-
-        // Add next frame after a small delay to prevent blocking
-        setTimeout(addFrame, 1);
-      };
-
-      gif.on("progress", (progress: number) => {
+      if (!cancelGifGeneration) {
+        await CounterExportManager.downloadGif(blob);
+        
         toast({
-          title: "Generating GIF",
-          description: `Progress: ${Math.round(progress * 100)}%`,
+          title: "GIF Downloaded",
+          description: "Your counter animation GIF has been saved.",
         });
-      });
-
-      gif.on("finished", (blob: Blob) => {
-        if (!cancelGifGeneration) {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `counter-animation-${Date.now()}.gif`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-
-          toast({
-            title: "GIF Downloaded",
-            description:
-              counterSettings.background === "transparent"
-                ? "Your transparent counter animation GIF has been saved."
-                : "Your counter animation GIF has been saved.",
-          });
-        }
-
-        setIsGeneratingGif(false);
-        setCancelGifGeneration(false);
-      });
-
-      addFrame();
+      }
     } catch (error) {
-      console.error("Failed to generate GIF:", error);
+      if (error.message !== 'Export cancelled') {
+        console.error("Failed to generate GIF:", error);
+        toast({
+          title: "GIF Generation Failed",
+          description: "Could not generate GIF. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
       setIsGeneratingGif(false);
       setCancelGifGeneration(false);
-      toast({
-        title: "GIF Generation Failed",
-        description: "Could not generate GIF. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -719,6 +690,7 @@ const StudioContent = () => {
                   onPause={handlePauseRecording}
                   onRestart={handleRestartRecording}
                   onDownloadVideo={handleDownloadVideo}
+                  onDownloadVideoNoBackground={handleDownloadVideoNoBackground}
                   onDownloadGif={handleDownloadGif}
                   onPreviewVideo={handlePreviewVideo}
                   recordedChunksLength={recordedChunks.current.length}

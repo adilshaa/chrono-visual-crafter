@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import {
   PlayIcon,
   Film,
   Eye,
+  FileImage,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRecording } from "@/contexts/RecordingContext";
@@ -29,6 +31,7 @@ interface RecordingControlsProps {
   onPause: () => void;
   onRestart: () => void;
   onDownloadVideo: () => void;
+  onDownloadVideoNoBackground: () => void;
   onDownloadGif: () => void;
   onPreviewVideo: () => void;
   recordedChunksLength: number;
@@ -49,6 +52,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
   onPause,
   onRestart,
   onDownloadVideo,
+  onDownloadVideoNoBackground,
   onDownloadGif,
   onPreviewVideo,
   recordedChunksLength,
@@ -191,7 +195,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
                 recordedChunksLength === 0 || isProcessingVideo || !hasCredits
               }
               className="w-12 h-12 rounded-full bg-blue-600/90 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg border-0 flex items-center justify-center"
-              aria-label="Export video"
+              aria-label="Export video with background"
             >
               {isProcessingVideo ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -200,7 +204,27 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">Export Video</TooltipContent>
+          <TooltipContent side="bottom">Export Video (with background)</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={onDownloadVideoNoBackground}
+              disabled={
+                recordedChunksLength === 0 || isProcessingVideo || !hasCredits
+              }
+              className="w-12 h-12 rounded-full bg-orange-600/90 hover:bg-orange-700 disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg border-0 flex items-center justify-center"
+              aria-label="Export counter and text only"
+            >
+              {isProcessingVideo ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <FileImage className="w-5 h-5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Export Counter & Text Only</TooltipContent>
         </Tooltip>
 
         <Tooltip>
