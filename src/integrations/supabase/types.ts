@@ -143,9 +143,11 @@ export type Database = {
           id: string;
           plan_id: string | null;
           status: string;
-          subscription_id: string;
+          subscription_id: string; // deprecated, keep for backward compatibility
           updated_at: string;
           user_id: string;
+          paddle_product_id: string | null; // NEW: foreign key to subscription_plans.paddle_product_id
+          payment_interval: string | null; // NEW: month, year, etc.
         };
         Insert: {
           created_at?: string;
@@ -154,9 +156,11 @@ export type Database = {
           id?: string;
           plan_id?: string | null;
           status?: string;
-          subscription_id: string;
+          subscription_id?: string;
           updated_at?: string;
           user_id: string;
+          paddle_product_id?: string | null; // NEW
+          payment_interval?: string | null; // NEW
         };
         Update: {
           created_at?: string;
@@ -168,6 +172,8 @@ export type Database = {
           subscription_id?: string;
           updated_at?: string;
           user_id?: string;
+          paddle_product_id?: string | null; // NEW
+          payment_interval?: string | null; // NEW
         };
         Relationships: [
           {
@@ -176,6 +182,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "subscription_plans";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_subscriptions_paddle_product_id_fkey"; // NEW
+            columns: ["paddle_product_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["paddle_product_id"];
           }
         ];
       };

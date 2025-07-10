@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Save, Trash2 } from "lucide-react";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface TextControlsProps {
@@ -26,105 +22,7 @@ const TextControls: React.FC<TextControlsProps> = ({
   settings,
   onSettingsChange,
 }) => {
-  const { user, profile } = useClerkAuth();
   const { toast } = useToast();
-  const [savedPresets, setSavedPresets] = useState<any[]>([]);
-  const [presetName, setPresetName] = useState("");
-  const [loadingPresets, setLoadingPresets] = useState(false);
-
-  const isPaidUser =
-    profile?.subscription_status === "active" &&
-    profile?.subscription_plan !== "free";
-
-  React.useEffect(() => {
-    if (isPaidUser) {
-      loadSavedPresets();
-    }
-  }, [isPaidUser]);
-
-  const loadSavedPresets = async () => {
-    if (!user) return;
-    
-    setLoadingPresets(true);
-    try {
-      const { data, error } = await supabase
-        .from("saved_text_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setSavedPresets(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error loading presets",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingPresets(false);
-    }
-  };
-
-  const savePreset = async () => {
-    if (!user || !presetName.trim()) return;
-
-    try {
-      const { error } = await supabase.from("saved_text_settings").insert({
-          user_id: user.id,
-          name: presetName.trim(),
-        settings: settings,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Preset saved",
-        description: `"${presetName}" has been saved successfully.`,
-      });
-      
-      setPresetName("");
-      loadSavedPresets();
-    } catch (error: any) {
-      toast({
-        title: "Error saving preset",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const loadPreset = (preset: any) => {
-    onSettingsChange(preset.settings);
-    toast({
-      title: "Preset loaded",
-      description: `"${preset.name}" has been applied.`,
-    });
-  };
-
-  const deletePreset = async (presetId: string, presetName: string) => {
-    try {
-      const { error } = await supabase
-        .from("saved_text_settings")
-        .delete()
-        .eq("id", presetId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Preset deleted",
-        description: `"${presetName}" has been removed.`,
-      });
-      
-      loadSavedPresets();
-    } catch (error: any) {
-      toast({
-        title: "Error deleting preset",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -270,7 +168,7 @@ const TextControls: React.FC<TextControlsProps> = ({
                       </div>
                     </div>
 
-                    <div className="col-start-3 row-start-2">
+                    <div className="col-start-3 col-end-4 row-start-2">
                       <button
                         type="button"
                         onClick={() =>
@@ -411,64 +309,6 @@ const TextControls: React.FC<TextControlsProps> = ({
           )}
         </CardContent>
       </Card>
-
-      {/* Save/Load Presets for Paid Users */}
-      {isPaidUser && (
-        <Card className="!bg-[#101010] border-gray-700/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-white text-base font-medium flex items-center gap-2">
-              💾 Text Presets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                value={presetName}
-                onChange={(e) => setPresetName(e.target.value)}
-                placeholder="Preset name"
-                className="bg-[#181818] border-gray-600 text-white"
-              />
-              <Button
-                onClick={savePreset}
-                disabled={!presetName.trim()}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Save className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {savedPresets.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-white">Saved Presets</Label>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {savedPresets.map((preset) => (
-                    <div
-                      key={preset.id}
-                      className="flex items-center justify-between p-2 bg-[#181818] rounded"
-                    >
-                      <button
-                        onClick={() => loadPreset(preset)}
-                        className="text-white text-sm hover:text-blue-400 flex-1 text-left"
-                      >
-                        {preset.name}
-                      </button>
-                      <Button
-                        onClick={() => deletePreset(preset.id, preset.name)}
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-400 hover:text-red-300 p-1"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

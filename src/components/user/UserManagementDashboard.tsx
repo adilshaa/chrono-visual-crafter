@@ -47,6 +47,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Smartphone } from "lucide-react";
+import { SubscriptionManager } from "@/components/subscription/SubscriptionManager";
+import { TestRunner } from "@/components/subscription/TestRunner";
 
 export interface UserManagementDashboardProps {
   className?: string;
@@ -672,49 +674,13 @@ export function UserManagementDashboard({
                     exit="exit"
                     className="space-y-8"
                   >
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-4">
-                        Current Plan
-                      </h3>
-                      <Card className="bg-gradient-to-br from-amber-500/10 to-transparent border border-white/[0.08]">
-                        <CardContent className="pt-6 pb-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                              <h4 className="text-lg font-medium text-white flex items-center gap-2">
-                                {profile?.subscription_plan === "Free"
-                                  ? "Free"
-                                  : "Pro"}{" "}
-                                Plan
-                                {profile?.subscription_plan !== "Free" && (
-                                  <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 border-none text-white ml-2">
-                                    Current
-                                  </Badge>
-                                )}
-                              </h4>
-                              <p className="text-sm text-white/60 mt-1">
-                                {profile?.subscription_plan === "Free"
-                                  ? "Limited features and functionality"
-                                  : "Full access to all premium features"}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
-                              >
-                                Change Plan
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                className="text-white/60 hover:text-white/90 hover:bg-white/5"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    {/* Subscription Management Component */}
+                    <SubscriptionManager />
+
+                    {/* Test Runner for Development */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <TestRunner />
+                    )}
 
                     <div>
                       <h3 className="text-lg font-medium text-white mb-4">

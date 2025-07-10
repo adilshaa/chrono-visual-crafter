@@ -72,106 +72,112 @@ const StudioSidebar: React.FC<StudioSidebarProps> = ({
         tabIndex={isOpen ? 0 : -1}
       >
         <div className="flex flex-col h-full">
-          {/* Header with improved accessibility */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
-            <h2 className="text-white font-semibold px-3 py-1 rounded border border-gray-700/50 flex items-center">
-              <Settings className="w-4 h-4 mr-2" aria-hidden="true" />
-              Studio Controls
-            </h2>
+          {isOpen && (
+            <>
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
+                <h2 className="text-white font-semibold px-3 py-1 rounded border border-gray-700/50 flex items-center">
+                  <Settings className="w-4 h-4 mr-2" aria-hidden="true" />
+                  Studio Controls
+                </h2>
 
-            {/* Close button - larger target, visible focus, accessible */}
-            <Button
-              onClick={onToggle}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-[#101010] hover:bg-[#2BA6FF]/20 focus:ring-2 focus:ring-[#2BA6FF] border border-gray-700/50"
-              size="sm"
-              aria-label="Close sidebar"
-            >
-              <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-            </Button>
-          </div>
-
-          {/* Tabs - improved with accessible labels but reverted alignment */}
-          <div className="flex-1 overflow-hidden">
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="h-full flex flex-col"
-            >
-              <TabsList
-                className="grid grid-cols-3 gap-x-2 m-4 bg-[#101010] border border-gray-700/50"
-                aria-label="Editor Sections"
-              >
-                <TabsTrigger
-                  value="counter"
-                  className="flex items-center gap-1 text-xs border data-[state=active]:border-[#2BA6FF] border-transparent data-[state=active]:bg-[#2BA6FF]/20 data-[state=active]:text-[#2BA6FF] focus:ring-2 focus:ring-[#2BA6FF]/50"
-                  aria-label="Counter settings tab"
+                <Button
+                  onClick={onToggle}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-[#101010] hover:bg-[#2BA6FF]/20 focus:ring-2 focus:ring-[#2BA6FF] border border-gray-700/50"
+                  size="sm"
+                  aria-label="Close sidebar"
                 >
-                  <Hash className="w-3 h-3" aria-hidden="true" />
-                  Counter
-                </TabsTrigger>
-                <TabsTrigger
-                  value="text"
-                  className="flex items-center gap-1 text-xs border data-[state=active]:border-[#2BA6FF] border-transparent data-[state=active]:bg-[#2BA6FF]/20 data-[state=active]:text-[#2BA6FF] focus:ring-2 focus:ring-[#2BA6FF]/50"
-                  aria-label="Text settings tab"
-                >
-                  <Type className="w-3 h-3" aria-hidden="true" />
-                  Text
-                </TabsTrigger>
-                <TabsTrigger
-                  value="design"
-                  className="flex items-center gap-1 text-xs border data-[state=active]:border-[#2BA6FF] border-transparent data-[state=active]:bg-[#2BA6FF]/20 data-[state=active]:text-[#2BA6FF] focus:ring-2 focus:ring-[#2BA6FF]/50"
-                  aria-label="Design settings tab"
-                >
-                  <Palette className="w-3 h-3" aria-hidden="true" />
-                  Design
-                </TabsTrigger>
-              </TabsList>
-
-              <div className="flex-1 overflow-hidden px-4 pb-4">
-                <ScrollArea className="h-full custom-scrollbar">
-                  <TabsContent
-                    value="counter"
-                    className="mt-0"
-                    role="tabpanel"
-                    aria-label="Counter settings"
-                  >
-                    <ControlPanel
-                      settings={counterSettings}
-                      onSettingsChange={onCounterSettingsChange}
-                    />
-                  </TabsContent>
-
-                  <TabsContent
-                    value="text"
-                    className="mt-0"
-                    role="tabpanel"
-                    aria-label="Text settings"
-                  >
-                    <TextControls
-                      settings={textSettings}
-                      onSettingsChange={onTextSettingsChange}
-                    />
-                  </TabsContent>
-
-                  <TabsContent
-                    value="design"
-                    className="mt-0"
-                    role="tabpanel"
-                    aria-label="Design settings"
-                  >
-                    <DesignPreview
-                      selectedDesign={counterSettings.design}
-                      onDesignChange={(design) =>
-                        onCounterSettingsChange({ ...counterSettings, design })
-                      }
-                      designSettings={designSettings}
-                      onDesignSettingsChange={onDesignSettingsChange}
-                    />
-                  </TabsContent>
-                </ScrollArea>
+                  <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                </Button>
               </div>
-            </Tabs>
-          </div>
+
+              {/* Tabs */}
+              <div className="flex-1 overflow-hidden">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={setActiveTab}
+                  className="h-full flex flex-col"
+                >
+                  <TabsList
+                    className="grid grid-cols-3 gap-x-2 m-4 bg-[#101010] border border-gray-700/50"
+                    aria-label="Editor Sections"
+                  >
+                    <TabsTrigger
+                      value="counter"
+                      className="flex items-center gap-1 text-xs border data-[state=active]:border-[#2BA6FF] border-transparent data-[state=active]:bg-[#2BA6FF]/20 data-[state=active]:text-[#2BA6FF] focus:ring-2 focus:ring-[#2BA6FF]/50"
+                      aria-label="Counter settings tab"
+                    >
+                      <Hash className="w-3 h-3" aria-hidden="true" />
+                      Counter
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="text"
+                      className="flex items-center gap-1 text-xs border data-[state=active]:border-[#2BA6FF] border-transparent data-[state=active]:bg-[#2BA6FF]/20 data-[state=active]:text-[#2BA6FF] focus:ring-2 focus:ring-[#2BA6FF]/50"
+                      aria-label="Text settings tab"
+                    >
+                      <Type className="w-3 h-3" aria-hidden="true" />
+                      Text
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="design"
+                      className="flex items-center gap-1 text-xs border data-[state=active]:border-[#2BA6FF] border-transparent data-[state=active]:bg-[#2BA6FF]/20 data-[state=active]:text-[#2BA6FF] focus:ring-2 focus:ring-[#2BA6FF]/50"
+                      aria-label="Design settings tab"
+                    >
+                      <Palette className="w-3 h-3" aria-hidden="true" />
+                      Design
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <div className="flex-1 overflow-hidden px-4 pb-4">
+                    <ScrollArea className="h-full custom-scrollbar">
+                      <TabsContent
+                        value="counter"
+                        className="mt-0"
+                        role="tabpanel"
+                        aria-label="Counter settings"
+                      >
+                        <ControlPanel
+                          settings={counterSettings}
+                          onSettingsChange={onCounterSettingsChange}
+                        />
+                      </TabsContent>
+
+                      <TabsContent
+                        value="text"
+                        className="mt-0"
+                        role="tabpanel"
+                        aria-label="Text settings"
+                      >
+                        <TextControls
+                          settings={textSettings}
+                          onSettingsChange={onTextSettingsChange}
+                        />
+                      </TabsContent>
+
+                      <TabsContent
+                        value="design"
+                        className="mt-0"
+                        role="tabpanel"
+                        aria-label="Design settings"
+                      >
+                        <DesignPreview
+                          selectedDesign={counterSettings.design}
+                          onDesignChange={(design) =>
+                            onCounterSettingsChange({
+                              ...counterSettings,
+                              design,
+                            })
+                          }
+                          designSettings={designSettings}
+                          onDesignSettingsChange={onDesignSettingsChange}
+                        />
+                      </TabsContent>
+                    </ScrollArea>
+                  </div>
+                </Tabs>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

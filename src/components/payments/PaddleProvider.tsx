@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { PaddleDebugger } from "@/utils/paddleDebugger";
 
 declare global {
   interface Window {
@@ -15,6 +16,7 @@ interface SubscriptionState {
   status: string;
   plan: string;
   customerId?: string;
+  subscriptionId?: string;
 }
 
 interface PaddleContextType {
@@ -22,6 +24,9 @@ interface PaddleContextType {
   subscription: SubscriptionState | null;
   openCheckout: (priceId: string, customData?: any) => void;
   refreshSubscriptionStatus: () => Promise<any>;
+  cancelSubscription: () => Promise<boolean>;
+  validateSubscription: () => Promise<boolean>;
+  cancelSubscriptionAPI: (subscriptionId: string) => Promise<boolean>;
   onSubscriptionUpdate?: (subscriptionData: any) => void;
 }
 
@@ -70,6 +75,14 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
           window.Paddle.Setup({
             token: import.meta.env.VITE_PADDLE_CLIENT_TOKEN,
           });
+          
+          // Debug Paddle state in development
+          if (process.env.NODE_ENV === 'development') {
+            setTimeout(() => {
+              PaddleDebugger.logPaddleState();
+            }, 1000);
+          }
+          
           setIsLoaded(true);
         }
       };
@@ -104,6 +117,22 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
         userId: user.id,
       });
 
+      // First, get user subscription details from Supabase
+      const { data: userSubscription, error: subscriptionError } =
+        await supabase
+          .from("user_subscriptions")
+          .select("*, subscription_plans:plan_id(*)")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+      if (subscriptionError) {
+        logger.error("Error fetching user subscription", {
+          error: subscriptionError,
+          userId: user.id,
+        });
+      }
+
+      // Then get profile data
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("subscription_status, subscription_plan, paddle_customer_id")
@@ -128,6 +157,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
         status: profile.subscription_status || "free",
         plan: profile.subscription_plan || "free",
         customerId: profile.paddle_customer_id,
+        subscriptionId: userSubscription?.subscription_id,
       };
 
       setSubscription(subscriptionData);
@@ -155,9 +185,338 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
     }
   };
 
+  const validateSubscription = async (): Promise<boolean> => {
+    if (!user) return false;
+    if (!isLoaded || !window.Paddle) return false;
+
+    try {
+      // First check if we have a subscription
+      if (!subscription?.subscriptionId || subscription.status !== "active") {
+        logger.info("No active subscription to validate", { userId: user.id });
+        return false;
+      }
+
+      // Get subscription details from Supabase
+      const { data: userSubscription, error: subError } = await supabase
+        .from("user_subscriptions")
+        .select("current_period_end, subscription_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (subError || !userSubscription) {
+        logger.error("Error fetching subscription details", {
+          error: subError,
+          userId: user.id,
+        });
+        return false;
+      }
+
+      // Check if subscription has expired
+      const currentPeriodEnd = new Date(userSubscription.current_period_end);
+      const now = new Date();
+
+      if (currentPeriodEnd < now) {
+        logger.warn("Subscription period has ended", {
+          userId: user.id,
+          currentPeriodEnd,
+          now,
+        });
+
+        // Attempt to refresh subscription data from Paddle
+        // This is just a client-side check - the actual billing would be handled by Paddle
+        toast({
+          title: "Subscription Expired",
+          description:
+            "Your subscription period has ended. Please update your payment method.",
+          variant: "destructive",
+        });
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      logger.error("Error validating subscription", { error, userId: user.id });
+      return false;
+    }
+  };
+
+  const cancelSubscription = async (): Promise<boolean> => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to manage your subscription.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!isLoaded || !window.Paddle) {
+      toast({
+        title: "Payment System Not Ready",
+        description: "Please wait for the payment system to load.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!subscription?.subscriptionId) {
+      toast({
+        title: "No Active Subscription",
+        description: "You don't have an active subscription to cancel.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      logger.info("Canceling subscription", {
+        userId: user.id,
+        subscriptionId: subscription.subscriptionId,
+      });
+
+      // Open Paddle's cancel flow
+      window.Paddle.Subscription.cancelPreview({
+        subscriptionId: subscription.subscriptionId,
+        eventCallback: async (data: any) => {
+          logger.info("Paddle cancel event received", {
+            eventName: data.name,
+            data,
+          });
+
+          if (data.name === "cancel.complete") {
+            logger.info("Subscription cancellation completed");
+            toast({
+              title: "Subscription Canceled",
+              description: "Your subscription has been canceled successfully.",
+            });
+
+            // Refresh subscription status after cancellation
+            await refreshSubscriptionStatus();
+            return true;
+          }
+
+          if (data.name === "cancel.error") {
+            logger.error("Subscription cancellation error", { data });
+            toast({
+              title: "Cancellation Error",
+              description:
+                "There was an issue canceling your subscription. Please try again.",
+              variant: "destructive",
+            });
+            return false;
+          }
+        },
+      });
+
+      return true;
+    } catch (error) {
+      logger.error("Error canceling subscription", { error, userId: user.id });
+      toast({
+        title: "Cancellation Error",
+        description:
+          "There was an issue canceling your subscription. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  // Direct API cancellation without UI
+  const cancelSubscriptionAPI = async (
+    subscriptionId: string
+  ): Promise<boolean> => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to manage your subscription.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      console.log("Canceling subscription via API", {
+        userId: user.id,
+        subscriptionId,
+      });
+      
+      // Import audit logger
+      const { SubscriptionAuditLogger } = await import("@/utils/subscriptionAudit");
+
+      if (!isLoaded || !window.Paddle) {
+        toast({
+          title: "Payment System Not Ready",
+          description: "Please wait for the payment system to load.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Check if the modern Paddle API is available
+      if (window.Paddle.Subscription && typeof window.Paddle.Subscription.cancel === 'function') {
+        // Use the modern Paddle API
+        return new Promise((resolve) => {
+          window.Paddle.Subscription.cancel({
+            subscriptionId: subscriptionId,
+            effectiveFrom: 'next_billing_period',
+            eventCallback: async (data: any) => {
+              console.log("Paddle cancel event received", {
+                eventName: data.name,
+                data,
+              });
+
+              if (data.name === "subscription.cancel.completed" || data.name === "cancel.complete") {
+                console.log("Subscription cancellation completed");
+                toast({
+                  title: "Subscription Canceled",
+                  description: "Your subscription has been canceled successfully.",
+                });
+
+                // Import and log cancellation in audit trail
+                try {
+                  const { SubscriptionAuditLogger } = await import("@/utils/subscriptionAudit");
+                  await SubscriptionAuditLogger.logCancellation(
+                    user.id,
+                    subscriptionId,
+                    'user_initiated',
+                    subscription?.status || 'active'
+                  );
+                } catch (auditError) {
+                  console.warn("Failed to log cancellation audit:", auditError);
+                }
+
+                // Refresh subscription status after cancellation
+                await refreshSubscriptionStatus();
+                resolve(true);
+              } else if (data.name === "subscription.cancel.error" || data.name === "cancel.error") {
+                console.error("Subscription cancellation error", { data });
+                toast({
+                  title: "Cancellation Error",
+                  description: data.error?.message || 
+                    "There was an issue canceling your subscription. Please try again.",
+                  variant: "destructive",
+                });
+                resolve(false);
+              }
+            },
+          });
+        });
+      }
+      
+      // Fallback: Try the legacy cancelPreview method
+      else if (window.Paddle.Subscription && typeof window.Paddle.Subscription.cancelPreview === 'function') {
+        return new Promise((resolve) => {
+          window.Paddle.Subscription.cancelPreview({
+            subscriptionId: subscriptionId,
+            effectiveFrom: 'next_billing_period',
+            eventCallback: async (data: any) => {
+              console.log("Paddle cancelPreview event received", {
+                eventName: data.name,
+                data,
+              });
+
+              if (data.name === "cancel.complete") {
+                console.log("Subscription cancellation completed");
+                toast({
+                  title: "Subscription Canceled",
+                  description: "Your subscription has been canceled successfully.",
+                });
+
+                // Import and log cancellation in audit trail
+                try {
+                  const { SubscriptionAuditLogger } = await import("@/utils/subscriptionAudit");
+                  await SubscriptionAuditLogger.logCancellation(
+                    user.id,
+                    subscriptionId,
+                    'user_initiated',
+                    subscription?.status || 'active'
+                  );
+                } catch (auditError) {
+                  console.warn("Failed to log cancellation audit:", auditError);
+                }
+
+                // Refresh subscription status after cancellation
+                await refreshSubscriptionStatus();
+                resolve(true);
+              } else if (data.name === "cancel.error") {
+                console.error("Subscription cancellation error", { data });
+                toast({
+                  title: "Cancellation Error",
+                  description: data.error?.message || 
+                    "There was an issue canceling your subscription. Please try again.",
+                  variant: "destructive",
+                });
+                resolve(false);
+              }
+            },
+          });
+        });
+      }
+      
+      // If neither method is available, use a server-side approach
+      else {
+        console.warn("Paddle client-side cancellation methods not available, using server-side approach");
+        
+        // Call your backend API to handle the cancellation
+        const response = await fetch('/api/subscriptions/cancel', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            subscriptionId,
+            userId: user.id,
+            reason: 'user_initiated'
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Server-side cancellation failed", { 
+            status: response.status, 
+            statusText: response.statusText,
+            errorData 
+          });
+          
+          toast({
+            title: "Cancellation Error",
+            description: errorData.message || "There was an issue canceling your subscription. Please try again.",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        console.log("Server-side cancellation successful");
+        toast({
+          title: "Subscription Canceled",
+          description: "Your subscription has been canceled successfully.",
+        });
+
+        // Refresh subscription status after cancellation
+        await refreshSubscriptionStatus();
+        return true;
+      }
+
+    } catch (error) {
+      console.error("Error canceling subscription via API", {
+        error,
+        userId: user.id,
+      });
+      toast({
+        title: "Cancellation Error",
+        description:
+          "There was an issue canceling your subscription. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const openCheckout = (priceId: string, customData?: any) => {
     console.log("Opening Paddle checkout with:", { priceId, customData });
 
+    // Enhanced error handling and validation
     if (!isLoaded || !window.Paddle) {
       console.error("Paddle not loaded:", {
         isLoaded,
@@ -165,7 +524,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
       });
       toast({
         title: "Payment System Not Ready",
-        description: "Please wait for the payment system to load.",
+        description: "Please wait for the payment system to load and try again.",
         variant: "destructive",
       });
       return;
@@ -195,6 +554,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
         userId: user.id,
         email: user.primaryEmailAddress?.emailAddress,
         full_name: user.fullName,
+        timestamp: new Date().toISOString(),
         ...customData,
       },
       settings: {
@@ -202,6 +562,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
         theme: "dark",
         locale: "en",
         successUrl: `${window.location.origin}/studio?payment=success`,
+        failureUrl: `${window.location.origin}/pricing?payment=failed`,
       },
 
       eventCallback: (data: any) => {
@@ -209,6 +570,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
 
         if (data.name === "checkout.completed") {
           logger.info("Payment completed, processing subscription update");
+          
           toast({
             title: "Payment Successful!",
             description:
@@ -216,6 +578,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
           });
 
           // Wait a moment for webhook processing, then refresh and navigate
+          // Increased timeout to allow for webhook processing
           setTimeout(async () => {
             const updatedSubscription = await refreshSubscriptionStatus();
             if (updatedSubscription) {
@@ -224,7 +587,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
               });
             }
             navigate("/studio?payment=success");
-          }, 2000);
+          }, 3000); // Increased from 2000ms to 3000ms
         }
 
         if (data.name === "checkout.closed") {
@@ -235,7 +598,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
           logger.error("Checkout error occurred", { data });
           toast({
             title: "Payment Error",
-            description:
+            description: data.error?.message || 
               "There was an issue processing your payment. Please try again.",
             variant: "destructive",
           });
@@ -251,6 +614,9 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
         subscription,
         openCheckout,
         refreshSubscriptionStatus,
+        cancelSubscription,
+        validateSubscription,
+        cancelSubscriptionAPI,
         onSubscriptionUpdate,
       }}
     >

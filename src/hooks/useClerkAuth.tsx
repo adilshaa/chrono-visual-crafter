@@ -104,6 +104,7 @@ export const useClerkAuth = () => {
               avatar_url: user.imageUrl || null,
               subscription_status: "free",
               subscription_plan: "free",
+              credits: 50,
             })
             .select()
             .single();
@@ -162,7 +163,8 @@ export const useClerkAuth = () => {
 
   const updateProfile = async (updates: any) => {
     if (!user) return { error: "No user" };
-
+    console.log(updates,'------u');
+    
     try {
       const { data, error } = await supabase
         .from("profiles")

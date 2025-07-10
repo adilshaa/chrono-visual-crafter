@@ -163,44 +163,44 @@ const Auth = () => {
         <div className="relative z-10">
           {isSignUp ? (
             <SignUp
-              appearance={{
-                elements: {
-                  formButtonPrimary:
-                    "bg-islandblue-600 hover:bg-islandblue-700 text-sm normal-case w-full",
-                  footerActionLink:
-                    "text-islandblue-400 hover:text-islandblue-300",
-                  card: "bg-transparent shadow-none",
-                  headerTitle: "hidden",
-                  headerSubtitle: "hidden",
-                  socialButtonsBlockButton:
-                    "border border-gray-700 bg-black hover:bg-islandblue-900/30 text-white",
-                  formFieldInput:
-                    "bg-black/60 border-gray-700 text-white focus:border-islandblue-400/70",
-                  formFieldLabel: "text-gray-300",
-                },
-              }}
+              // appearance={{
+              //   elements: {
+              //     formButtonPrimary:
+              //       "bg-islandblue-600 hover:bg-islandblue-700 text-sm normal-case w-full",
+              //     footerActionLink:
+              //       "text-islandblue-400 hover:text-islandblue-300",
+              //     card: "bg-transparent shadow-none",
+              //     headerTitle: "hidden",
+              //     headerSubtitle: "hidden",
+              //     socialButtonsBlockButton:
+              //       "border border-gray-700 bg-black hover:bg-islandblue-900/30 text-white",
+              //     formFieldInput:
+              //       "bg-black/60 border-gray-700 text-white focus:border-islandblue-400/70",
+              //     formFieldLabel: "text-gray-300",
+              //   },
+              // }}
               afterSignUpUrl="/studio"
               routing="virtual"
             />
           ) : (
             <SignIn
-              appearance={{
-                elements: {
-                  formButtonPrimary:
-                    "bg-islandblue-600 hover:bg-islandblue-700 text-sm normal-case w-full",
-                  footerActionLink:
-                    "text-islandblue-400 hover:text-islandblue-300",
-                  card: "bg-transparent shadow-none",
-                  headerTitle: "hidden",
-                  headerSubtitle: "hidden",
-                  socialButtonsBlockButton:
-                    "border border-gray-700 bg-black hover:bg-islandblue-900/30 text-white",
-                  formFieldInput:
-                    "bg-black/60 border-gray-700 text-white focus:border-islandblue-400/70",
-                  formFieldLabel: "text-gray-300",
-                  identityPreview: "bg-black/40 border border-gray-700",
-                },
-              }}
+              // appearance={{
+              //   elements: {
+              //     formButtonPrimary:
+              //       "bg-islandblue-600 hover:bg-islandblue-700 text-sm normal-case w-full",
+              //     footerActionLink:
+              //       "text-islandblue-400 hover:text-islandblue-300",
+              //     card: "bg-transparent shadow-none",
+              //     headerTitle: "hidden",
+              //     headerSubtitle: "hidden",
+              //     socialButtonsBlockButton:
+              //       "border border-gray-700 bg-black hover:bg-islandblue-900/30 text-white",
+              //     formFieldInput:
+              //       "bg-black/60 border-gray-700 text-white focus:border-islandblue-400/70",
+              //     formFieldLabel: "text-gray-300",
+              //     identityPreview: "bg-black/40 border border-gray-700",
+              //   },
+              // }}
               afterSignInUrl="/studio"
               routing="virtual"
             />

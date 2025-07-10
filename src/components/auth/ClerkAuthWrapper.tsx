@@ -11,9 +11,7 @@ interface ClerkAuthWrapperProps {
 
 const ClerkAuthWrapper: React.FC<ClerkAuthWrapperProps> = ({ children }) => {
   // Debug logging
-  console.log('Clerk Environment Variables Check:');
-  console.log('VITE_CLERK_PUBLISHABLE_KEY:', clerkPubKey);
-  console.log('All env vars:', import.meta.env);
+
 
   if (!clerkPubKey) {
     return (
@@ -48,7 +46,7 @@ const ClerkAuthWrapper: React.FC<ClerkAuthWrapperProps> = ({ children }) => {
           colorBackground: 'rgba(17, 24, 39, 0.8)',
           colorInputBackground: 'rgba(55, 65, 81, 0.5)',
           colorInputText: '#ffffff',
-          borderRadius: '0.75rem',
+          borderRadius: '0.5rem',
         },
         elements: {
           card: 'backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl',

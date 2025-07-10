@@ -1,20 +1,31 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TransitionLibraryProps {
   selectedTransition: string;
   onSelectTransition: (transition: string) => void;
+  selectedEasing?: string;
+  onSelectEasing?: (easing: string) => void;
 }
 
 const TransitionLibrary: React.FC<TransitionLibraryProps> = ({
   selectedTransition,
   onSelectTransition,
+  selectedEasing = "linear",
+  onSelectEasing = () => {},
 }) => {
   // Category state for filtering transitions
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
-  // Define all transitions with their categories
+  // Define visible transitions (keeping only None, Fade In, Glitch, Blur, Typewriter)
   const transitions = [
     {
       id: "none",
@@ -27,84 +38,6 @@ const TransitionLibrary: React.FC<TransitionLibraryProps> = ({
       name: "Fade In",
       category: "basic",
       description: "Simple fade in transition",
-    },
-    {
-      id: "slideUp",
-      name: "Slide Up",
-      category: "motion",
-      description: "Slides from bottom to top",
-    },
-    {
-      id: "slideDown",
-      name: "Slide Down",
-      category: "motion",
-      description: "Slides from top to bottom",
-    },
-    {
-      id: "slideLeft",
-      name: "Slide Left",
-      category: "motion",
-      description: "Slides from right to left",
-    },
-    {
-      id: "slideRight",
-      name: "Slide Right",
-      category: "motion",
-      description: "Slides from left to right",
-    },
-    {
-      id: "cascade",
-      name: "Cascade",
-      category: "dynamic",
-      description: "Numbers flow through each other",
-    },
-    {
-      id: "scale",
-      name: "Scale",
-      category: "transform",
-      description: "Grows from small to large",
-    },
-    {
-      id: "rotate",
-      name: "Rotate",
-      category: "transform",
-      description: "Rotates into position",
-    },
-    {
-      id: "bounce",
-      name: "Bounce",
-      category: "dynamic",
-      description: "Bouncy animation effect",
-    },
-    {
-      id: "elastic",
-      name: "Elastic",
-      category: "dynamic",
-      description: "Elastic spring-like motion",
-    },
-    {
-      id: "wave",
-      name: "Wave",
-      category: "dynamic",
-      description: "Wave-like side to side motion",
-    },
-    {
-      id: "spiral",
-      name: "Spiral",
-      category: "special",
-      description: "Spirals into position",
-    },
-    {
-      id: "zoom",
-      name: "Zoom",
-      category: "transform",
-      description: "Zooms from small to large",
-    },
-    {
-      id: "flip",
-      name: "Flip",
-      category: "transform",
-      description: "Flips vertically into view",
     },
     {
       id: "glitch",
@@ -126,13 +59,35 @@ const TransitionLibrary: React.FC<TransitionLibraryProps> = ({
     },
   ];
 
+  // Define easing functions
+  const easingOptions = [
+    {
+      id: "linear",
+      name: "Linear",
+      description: "Counts at constant speed (0→1000→2000→3000→4000→5000)",
+    },
+    {
+      id: "easeOut",
+      name: "Ease-Out",
+      description:
+        "Starts fast, slows down at the end (0→3000→4500→4800→4950→5000)",
+    },
+    {
+      id: "easeIn",
+      name: "Ease-In",
+      description: "Starts slow, speeds up (0→500→2000→4000→5000)",
+    },
+    {
+      id: "bounce",
+      name: "Bounce",
+      description: "Overshoots and bounces back (0→3000→5500→4800→5200→5000)",
+    },
+  ];
+
   // Define transition categories
   const categories = [
-    { id: "all", name: "All Transitions" },
+    { id: "all", name: "All Effects" },
     { id: "basic", name: "Basic" },
-    { id: "motion", name: "Motion" },
-    { id: "transform", name: "Transform" },
-    { id: "dynamic", name: "Dynamic" },
     { id: "special", name: "Special" },
   ];
 
@@ -191,6 +146,29 @@ const TransitionLibrary: React.FC<TransitionLibraryProps> = ({
           </button>
         ))}
       </div>
+
+      {/* Easing Function Selection */}
+      <div className="mt-6 space-y-2">
+        <Label className="text-white">Easing Function</Label>
+        <Select value={selectedEasing} onValueChange={onSelectEasing}>
+          <SelectTrigger className="bg-[#181818] border-gray-600 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {easingOptions.map((easing) => (
+              <SelectItem key={easing.id} value={easing.id}>
+                {easing.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Easing description */}
+        <div className="text-xs text-gray-400 mt-1">
+          {easingOptions.find((e) => e.id === selectedEasing)?.description ||
+            ""}
+        </div>
+      </div>
     </div>
   );
 };
@@ -204,32 +182,6 @@ function getPreviewAnimationClass(transitionId: string): string {
       return `${baseClasses}`;
     case "fadeIn":
       return `${baseClasses} animate-fade-in`;
-    case "slideUp":
-      return `${baseClasses} animate-slide-up`;
-    case "slideDown":
-      return `${baseClasses} animate-slide-down`;
-    case "slideLeft":
-      return `${baseClasses} animate-slide-left`;
-    case "slideRight":
-      return `${baseClasses} animate-slide-right`;
-    case "cascade":
-      return `${baseClasses} animate-cascade`;
-    case "scale":
-      return `${baseClasses} animate-scale`;
-    case "rotate":
-      return `${baseClasses} animate-rotate`;
-    case "bounce":
-      return `${baseClasses} animate-bounce`;
-    case "elastic":
-      return `${baseClasses} animate-elastic`;
-    case "wave":
-      return `${baseClasses} animate-wave`;
-    case "spiral":
-      return `${baseClasses} animate-spiral`;
-    case "zoom":
-      return `${baseClasses} animate-zoom`;
-    case "flip":
-      return `${baseClasses} animate-flip`;
     case "glitch":
       return `${baseClasses} animate-glitch`;
     case "blur":
