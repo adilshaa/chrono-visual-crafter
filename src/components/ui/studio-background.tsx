@@ -95,9 +95,9 @@ export function StudioBackground({
     const rotate = Math.floor(Math.random() * 60) - 30; // -30 to 30 degrees
     const delay = i * 0.2;
 
-    // Randomize position
-    const top = `${Math.floor(Math.random() * 90)}%`;
-    const left = `${Math.floor(Math.random() * 90)}%`;
+    // Randomize position using CSS classes instead of style prop
+    const topClass = `top-[${Math.floor(Math.random() * 90)}%]`;
+    const leftClass = `left-[${Math.floor(Math.random() * 90)}%]`;
 
     // Choose gradient type
     const gradientColors = [
@@ -119,8 +119,7 @@ export function StudioBackground({
         rotate={rotate}
         delay={delay}
         gradient={gradient}
-        className={`absolute`}
-        style={{ top, left }}
+        className={cn("absolute", topClass, leftClass)}
       />
     );
   }
@@ -133,16 +132,13 @@ export function StudioBackground({
       {/* Animated background shapes */}
       {animated && (
         <div className="absolute inset-0">
-          {shapes.map((shape, i) => (
-            <div
-              key={i}
-              className="absolute"
-              style={{
-                top: `${Math.floor(Math.random() * 90)}%`,
-                left: `${Math.floor(Math.random() * 90)}%`,
-              }}
-            >
+          {Array.from({ length: shapeCount }).map((_, i) => {
+            const topClass = `top-[${Math.floor(Math.random() * 90)}%]`;
+            const leftClass = `left-[${Math.floor(Math.random() * 90)}%]`;
+            
+            return (
               <FloatingShape
+                key={i}
                 width={100 + Math.floor(Math.random() * 300)}
                 height={50 + Math.floor(Math.random() * 150)}
                 rotate={Math.floor(Math.random() * 60) - 30}
@@ -154,9 +150,10 @@ export function StudioBackground({
                   "from-blue-500/[0.08] to-transparent",
                   "from-cyan-500/[0.08] to-transparent",
                 ][Math.floor(Math.random() * 5)]}
+                className={cn("absolute", topClass, leftClass)}
               />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

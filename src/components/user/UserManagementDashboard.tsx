@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +28,7 @@ import {
   Eye,
   EyeOff,
   ChevronRight,
+  Globe,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {

@@ -124,7 +124,7 @@ export const retryBilling = async (
   }
 };
 
-// Update subscription in Supabase
+// Update subscription in Supabase - simplified type annotation
 export const updateSubscriptionInSupabase = async (
   subscriptionId: string,
   paddleData: PaddleSubscription
@@ -150,8 +150,8 @@ export const updateSubscriptionInSupabase = async (
   }
 };
 
-// Get subscription details from Supabase
-export const getSubscriptionFromSupabase = async (userId: string): Promise<any> => {
+// Get subscription details from Supabase - simplified return type
+export const getSubscriptionFromSupabase = async (userId: string) => {
   try {
     const { data, error } = await supabase
       .from("user_subscriptions")
