@@ -692,6 +692,13 @@ const StudioContent = () => {
                   onPause={handlePauseRecording}
                   onRestart={handleRestartRecording}
                   onDownloadVideo={handleDownloadVideo}
+                  onDownloadVideoNoBackground={() => {
+                    toast({
+                      title: "Feature Not Available",
+                      description: "This feature is only available in the main studio.",
+                      variant: "destructive",
+                    });
+                  }}
                   onDownloadGif={handleDownloadGif}
                   onPreviewVideo={handlePreviewVideo}
                   recordedChunksLength={recordedChunks.current.length}
@@ -701,8 +708,7 @@ const StudioContent = () => {
                   hasCredits={
                     profile?.subscription_plan === "pro" ||
                     profile?.credits === null ||
-                    (typeof profile?.credits === "number" &&
-                      profile.credits > 0)
+                    (typeof profile?.credits === "number" && profile.credits > 0)
                   }
                   hasRecordedVideo={!!videoPreviewUrl}
                 />

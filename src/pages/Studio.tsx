@@ -371,7 +371,11 @@ const StudioContent = () => {
 
         const blob = await CounterExportManager.exportCounterOnly({
           canvas: canvasRef.current,
-          settings: counterSettings,
+          settings: {
+            ...counterSettings,
+            startValue: counterSettings.startValue,
+            endValue: counterSettings.endValue,
+          },
           textSettings,
           designSettings,
           duration: counterSettings.duration,
@@ -495,7 +499,7 @@ const StudioContent = () => {
   };
 
   const handleDownloadGif = async () => {
-    if (!canvasRef.current || recordedChunks.current.length === 0) return;
+    if (!canvasRef.current) return;
 
     setIsGeneratingGif(true);
     setCancelGifGeneration(false);
@@ -505,7 +509,11 @@ const StudioContent = () => {
         canvasRef.current,
         {
           canvas: canvasRef.current,
-          settings: counterSettings,
+          settings: {
+            ...counterSettings,
+            startValue: counterSettings.startValue,
+            endValue: counterSettings.endValue,
+          },
           textSettings,
           designSettings,
           duration: counterSettings.duration,
@@ -514,10 +522,7 @@ const StudioContent = () => {
           fps: 30
         },
         (progress: number) => {
-          toast({
-            title: "Generating GIF",
-            description: `Progress: ${Math.round(progress * 100)}%`,
-          });
+          // Update progress if needed
         },
         () => cancelGifGeneration
       );
@@ -531,7 +536,7 @@ const StudioContent = () => {
         });
       }
     } catch (error) {
-      if (error.message !== 'Export cancelled') {
+      if ((error as Error).message !== 'Export cancelled') {
         console.error("Failed to generate GIF:", error);
         toast({
           title: "GIF Generation Failed",

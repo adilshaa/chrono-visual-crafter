@@ -10,6 +10,19 @@ export interface CounterExportOptions {
     design: string;
     backgroundGradient?: string;
     customBackgroundColor?: string;
+    startValue: number;
+    endValue: number;
+    fontFamily: string;
+    fontSize: number;
+    fontWeight: number;
+    letterSpacing: number;
+    textColor: string;
+    speed: number;
+    easing: string;
+    prefix: string;
+    suffix: string;
+    separator: string;
+    useFloatValues: boolean;
   };
   textSettings: {
     enabled: boolean;
@@ -52,25 +65,14 @@ export class CounterExportManager {
   }
 
   static async exportCounterOnly(options: CounterExportOptions): Promise<Blob> {
-    const { canvas, settings, textSettings, designSettings, duration, currentValue, formatNumber, fps = 60 } = options;
+    const { canvas, settings, textSettings, designSettings, duration, formatNumber, fps = 60 } = options;
     
     // Create a new canvas for counter-only export
     const exportCanvas = document.createElement('canvas');
     exportCanvas.width = canvas.width;
     exportCanvas.height = canvas.height;
-    const ctx = exportCanvas.getContext('2d', { alpha: true });
     
-    if (!ctx) {
-      throw new Error('Could not get export canvas context');
-    }
-
-    // Clear canvas (transparent background)
-    ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-    // Apply counter and text rendering logic similar to CounterPreview but without background
-    this.renderCounterAndText(ctx, exportCanvas, settings, textSettings, designSettings, currentValue, formatNumber);
-
-    // Create stream and record
+    // Get the stream from the export canvas
     const stream = exportCanvas.captureStream(fps);
     
     return new Promise((resolve, reject) => {
@@ -100,14 +102,72 @@ export class CounterExportManager {
         reject(new Error('Recording failed'));
       };
       
+      // Start recording
       recorder.start(100);
       
-      setTimeout(() => {
-        if (recorder.state === 'recording') {
-          recorder.stop();
+      // Animate the counter over the duration
+      const startTime = Date.now();
+      const frameInterval = 1000 / fps;
+      let lastFrameTime = 0;
+      
+      const animateCounter = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / (duration * 1000), 1);
+        
+        // Apply easing function
+        let easedProgress = progress;
+        switch (settings.easing) {
+          case 'easeOut':
+            easedProgress = 1 - Math.pow(1 - progress, 2);
+            break;
+          case 'easeIn':
+            easedProgress = progress * progress;
+            break;
+          case 'bounce':
+            if (progress < 0.5) {
+              easedProgress = 4 * progress * progress;
+            } else if (progress < 0.8) {
+              easedProgress = 1 + (progress - 0.8) * 5;
+            } else {
+              easedProgress = 1 - 0.5 * Math.pow((progress - 1) * 2.5, 2);
+            }
+            break;
+          default:
+            easedProgress = progress;
         }
-        stream.getTracks().forEach(track => track.stop());
-      }, duration * 1000);
+        
+        // Calculate current value
+        const currentValue = settings.startValue + easedProgress * (settings.endValue - settings.startValue);
+        
+        // Render frame
+        const ctx = exportCanvas.getContext('2d', { alpha: true });
+        if (ctx) {
+          // Clear canvas (transparent background)
+          ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
+          
+          // Render counter and text
+          this.renderCounterAndText(ctx, exportCanvas, settings, textSettings, designSettings, currentValue, formatNumber);
+        }
+        
+        if (progress >= 1) {
+          // Animation complete, stop recording
+          setTimeout(() => {
+            if (recorder.state === 'recording') {
+              recorder.stop();
+            }
+            stream.getTracks().forEach(track => track.stop());
+          }, 100);
+        } else {
+          // Continue animation
+          if (elapsed - lastFrameTime >= frameInterval) {
+            lastFrameTime = elapsed;
+          }
+          requestAnimationFrame(animateCounter);
+        }
+      };
+      
+      // Start animation
+      animateCounter();
     });
   }
 
@@ -132,7 +192,6 @@ export class CounterExportManager {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = settings.textColor || '#FFFFFF';
-    ctx.letterSpacing = `${settings.letterSpacing}px`;
     
     const counterText = formatNumber(currentValue);
     ctx.fillText(counterText, centerX, centerY);
@@ -186,7 +245,7 @@ export class CounterExportManager {
     onProgress?: (progress: number) => void,
     onCancel?: () => boolean
   ): Promise<Blob> {
-    const { duration, fps = 30 } = options;
+    const { duration, fps = 30, settings, textSettings, designSettings, formatNumber } = options;
     
     try {
       const ffmpeg = await this.initializeFFmpeg();
@@ -195,39 +254,70 @@ export class CounterExportManager {
       const frameCount = Math.floor(duration * fps);
       const frames: Uint8Array[] = [];
       
+      // Create a temporary canvas for frame generation
+      const frameCanvas = document.createElement('canvas');
+      frameCanvas.width = canvas.width;
+      frameCanvas.height = canvas.height;
+      const frameCtx = frameCanvas.getContext('2d', { alpha: true });
+      
+      if (!frameCtx) {
+        throw new Error('Could not get frame canvas context');
+      }
+      
       for (let i = 0; i < frameCount; i++) {
         if (onCancel && onCancel()) {
           throw new Error('Export cancelled');
         }
         
-        const progress = (options.settings.endValue - options.settings.startValue) * (i / (frameCount - 1));
-        const currentValue = options.settings.startValue + progress;
+        const progress = i / (frameCount - 1);
         
-        // Update canvas with current frame
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('Canvas context not available');
+        // Apply easing function
+        let easedProgress = progress;
+        switch (settings.easing) {
+          case 'easeOut':
+            easedProgress = 1 - Math.pow(1 - progress, 2);
+            break;
+          case 'easeIn':
+            easedProgress = progress * progress;
+            break;
+          case 'bounce':
+            if (progress < 0.5) {
+              easedProgress = 4 * progress * progress;
+            } else if (progress < 0.8) {
+              easedProgress = 1 + (progress - 0.8) * 5;
+            } else {
+              easedProgress = 1 - 0.5 * Math.pow((progress - 1) * 2.5, 2);
+            }
+            break;
+          default:
+            easedProgress = progress;
+        }
         
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const currentValue = settings.startValue + easedProgress * (settings.endValue - settings.startValue);
+        
+        // Clear frame canvas
+        frameCtx.clearRect(0, 0, frameCanvas.width, frameCanvas.height);
         
         // Render background if not transparent
-        if (options.settings.background !== 'transparent') {
-          if (options.settings.background === 'gradient') {
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            // Add gradient stops based on backgroundGradient
+        if (settings.background !== 'transparent') {
+          if (settings.background === 'gradient' && settings.backgroundGradient) {
+            const gradient = frameCtx.createLinearGradient(0, 0, frameCanvas.width, frameCanvas.height);
             gradient.addColorStop(0, '#2193b0');
             gradient.addColorStop(1, '#6dd5ed');
-            ctx.fillStyle = gradient;
+            frameCtx.fillStyle = gradient;
+          } else if (settings.background === 'custom' && settings.customBackgroundColor) {
+            frameCtx.fillStyle = settings.customBackgroundColor;
           } else {
-            ctx.fillStyle = options.settings.background === 'white' ? '#FFFFFF' : '#000000';
+            frameCtx.fillStyle = settings.background === 'white' ? '#FFFFFF' : '#000000';
           }
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          frameCtx.fillRect(0, 0, frameCanvas.width, frameCanvas.height);
         }
         
         // Render counter and text
-        this.renderCounterAndText(ctx, canvas, options.settings, options.textSettings, options.designSettings, currentValue, options.formatNumber);
+        this.renderCounterAndText(frameCtx, frameCanvas, settings, textSettings, designSettings, currentValue, formatNumber);
         
         // Convert canvas to image data
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const imageData = frameCtx.getImageData(0, 0, frameCanvas.width, frameCanvas.height);
         const rgbaData = new Uint8Array(imageData.data);
         frames.push(rgbaData);
         
@@ -236,12 +326,12 @@ export class CounterExportManager {
         }
       }
       
-      // Convert frames to video using FFmpeg
+      // Convert frames to GIF using FFmpeg
       const inputFileName = 'input.rawvideo';
       const outputFileName = 'output.gif';
       
       // Write frames as raw video
-      const frameSize = canvas.width * canvas.height * 4; // RGBA
+      const frameSize = frameCanvas.width * frameCanvas.height * 4; // RGBA
       const videoData = new Uint8Array(frames.length * frameSize);
       
       for (let i = 0; i < frames.length; i++) {
@@ -254,7 +344,7 @@ export class CounterExportManager {
       await ffmpeg.exec([
         '-f', 'rawvideo',
         '-pix_fmt', 'rgba',
-        '-s', `${canvas.width}x${canvas.height}`,
+        '-s', `${frameCanvas.width}x${frameCanvas.height}`,
         '-r', fps.toString(),
         '-i', inputFileName,
         '-vf', 'palettegen=reserve_transparent=1',
@@ -265,7 +355,7 @@ export class CounterExportManager {
       await ffmpeg.exec([
         '-f', 'rawvideo',
         '-pix_fmt', 'rgba',
-        '-s', `${canvas.width}x${canvas.height}`,
+        '-s', `${frameCanvas.width}x${frameCanvas.height}`,
         '-r', fps.toString(),
         '-i', inputFileName,
         '-i', 'palette.png',
