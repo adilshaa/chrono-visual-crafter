@@ -4,6 +4,7 @@ import { Button as NeonButton } from "@/components/ui/neon-button";
 import { motion } from "framer-motion";
 import { LogIn, UserPlus } from "lucide-react";
 import UserMenu from "@/components/user/UserMenu";
+import { useNavigate } from "react-router-dom";
 
 interface AuthButtonProps {
   mode?: "signin" | "signup" | "user";
@@ -11,15 +12,19 @@ interface AuthButtonProps {
   variant?: "default" | "solid" | "ghost";
   neon?: boolean;
 }
-
 const AuthButton: React.FC<AuthButtonProps> = ({
   mode = "signin",
   className = "",
   variant = "default",
   neon = true,
 }) => {
+  const navigate = useNavigate();
   const { isSignedIn } = useUser();
 
+  const handleRedirect = () => {
+    // Navigate to the studio page
+    navigate("/studio");
+  };
   if (isSignedIn) {
     return (
       <motion.div
@@ -48,10 +53,10 @@ const AuthButton: React.FC<AuthButtonProps> = ({
 
   return (
     // <SignInButton mode="modal">
-    <div >
-      <motion.div  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+    <div onClick={() => handleRedirect()}>
+      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
         <NeonButton variant={variant} className={className} neon={neon}>
-          Sign In
+          Get started
         </NeonButton>
       </motion.div>
     </div>

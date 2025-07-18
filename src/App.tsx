@@ -38,7 +38,7 @@ const App = () => {
             <PaddleProvider>
               <Routes>
                 <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
+                {/* <Route path="/auth" element={<Auth />} /> */}
                 {/* <Route path="/pricing" element={<Pricing />} />
                 <Route path="/checkout" element={<Checkout />} /> */}
                 {/* <Route path="/about" element={<About />} /> */}

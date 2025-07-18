@@ -30,7 +30,7 @@ const Hero2 = () => {
     if (isSignedIn) {
       navigate("/studio");
     } else {
-      navigate("/auth");
+      navigate("/studio");
     }
   };
 
@@ -152,7 +152,7 @@ const Hero2 = () => {
               Get Started Free
             </button>
             <NeonButton
-              onClick={() => navigate("/pricing")}
+              onClick={() => navigate("/studio")}
               variant="ghost"
               className="h-12 rounded-full border border-gray-600 px-8 text-base font-medium text-white hover:bg-white/10"
             >
