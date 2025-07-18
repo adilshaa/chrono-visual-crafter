@@ -148,14 +148,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 type="number"
                 step={getStep()}
                 value={settings.startValue}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const newValue = settings.useFloatValues
+                    ? parseFloat(e.target.value) || 1000
+                    : parseInt(e.target.value) || 1000;
                   onSettingsChange({
                     ...settings,
-                    startValue: settings.useFloatValues
-                      ? parseFloat(e.target.value) || 0
-                      : parseInt(e.target.value) || 0,
-                  })
-                }
+                    startValue: newValue,
+                  });
+                }}
                 className={`bg-[#181818] border-gray-600 text-white scrollbar-hide ${
                   mobileDetection.isMobile ? "h-12 min-h-[44px]" : ""
                 }`}
@@ -178,14 +179,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 type="number"
                 step={getStep()}
                 value={settings.endValue}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const newValue = settings.useFloatValues
+                    ? parseFloat(e.target.value) || 2000
+                    : parseInt(e.target.value) || 2000;
                   onSettingsChange({
                     ...settings,
-                    endValue: settings.useFloatValues
-                      ? parseFloat(e.target.value) || 100
-                      : parseInt(e.target.value) || 100,
-                  })
-                }
+                    endValue: newValue,
+                  });
+                }}
                 className={`bg-[#181818] border-gray-600 text-white ${
                   mobileDetection.isMobile ? "h-12 min-h-[44px]" : ""
                 }`}

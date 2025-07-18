@@ -22,15 +22,15 @@ const SectionLoader = () => (
 );
 
 const Landing = () => {
-  const { plans, loading } = usePricingPlans();
+  // const { plans, loading } = usePricingPlans();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin border-white"></div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen bg-black flex items-center justify-center">
+  //       <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin border-white"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex flex-col min-h-screen relative bg-black overflow-hidden">
@@ -74,10 +74,10 @@ const Landing = () => {
       </Suspense>
 
       {/* Pricing section */}
-      <div className="relative z-10">
+      {/* <div className="relative z-10">
         <SimplePricingCards plans={plans} />
-      </div>
-
+      </div> */}
+      
       {/* Footer */}
       <div className="border-t border-gray/10 relative z-10 mt-20">
         <Footer />

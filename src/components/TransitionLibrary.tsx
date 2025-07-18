@@ -301,181 +301,54 @@ const TransitionLibrary: React.FC<TransitionLibraryProps> = ({
       </div>
 
       {/* Transition grid */}
-      <TooltipProvider>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {filteredTransitions.map((transition) => {
-            const compatibility = checkTransitionCompatibility(transition);
-            const isAnimating = previewStates[transition.id];
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {filteredTransitions.map((transition) => {
+          const isAnimating = previewStates[transition.id];
 
-            return (
-              <Tooltip key={transition.id}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onSelectTransition(transition.id)}
-                    onMouseEnter={() => triggerPreviewAnimation(transition.id)}
-                    className={`p-3 rounded-lg border transition-colors relative group ${
-                      selectedTransition === transition.id
-                        ? "border-[#2BA6FF] bg-[#2BA6FF]/10"
-                        : "border-gray-700 bg-[#171717] hover:border-gray-500"
+          return (
+            <button
+              key={transition.id}
+              onClick={() => onSelectTransition(transition.id)}
+              onMouseEnter={() => triggerPreviewAnimation(transition.id)}
+              className={`p-3 rounded-lg border transition-colors relative group ${
+                selectedTransition === transition.id
+                  ? "border-[#2BA6FF] bg-[#2BA6FF]/10"
+                  : "border-gray-700 bg-[#171717] hover:border-gray-500"
+              }`}
+            >
+              <div className="flex flex-col items-center">
+                {/* Transition preview animation */}
+                <div className="w-full h-14 flex items-center justify-center overflow-hidden relative">
+                  <div
+                    className={`text-lg font-bold transition-all duration-300 ${
+                      isAnimating ? transition.previewAnimation : "text-white"
                     }`}
                   >
-                    <div className="flex flex-col items-center">
-                      {/* Transition preview animation */}
-                      <div className="w-full h-14 flex items-center justify-center overflow-hidden relative">
-                        <div
-                          className={`text-lg font-bold transition-all duration-300 ${
-                            isAnimating
-                              ? transition.previewAnimation
-                              : "text-white"
-                          }`}
-                        >
-                          {transition.category === "multi-digit"
-                            ? "123"
-                            : "123"}
-                        </div>
-                      </div>
-
-                      {/* Transition name and badges */}
-                      <div className="mt-2 text-xs text-white text-center">
-                        {transition.name}
-                      </div>
-
-                      {/* Performance and complexity badges */}
-                      {/* <div className="flex gap-1 mt-1">
-                        <Badge
-                          variant="outline"
-                          className={`text-xs px-1 py-0 ${
-                            transition.performance === "excellent"
-                              ? "border-green-500 text-green-400"
-                              : transition.performance === "good"
-                              ? "border-blue-500 text-blue-400"
-                              : transition.performance === "moderate"
-                              ? "border-yellow-500 text-yellow-400"
-                              : "border-red-500 text-red-400"
-                          }`}
-                        >
-                          {transition.performance}
-                        </Badge>
-                        {transition.complexity === "high" && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs px-1 py-0 border-purple-500 text-purple-400"
-                          >
-                            <Zap className="w-2 h-2 mr-1" />
-                            Advanced
-                          </Badge>
-                        )}
-                      </div> */}
-                    </div>
-
-                    {/* Category indicators */}
-                    {transition.category === "multi-digit" && (
-                      <div className="absolute top-1 right-1">
-                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      </div>
-                    )}
-                    {transition.category === "advanced" && (
-                      <div className="absolute top-1 right-1">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                      </div>
-                    )}
-
-                    {/* Compatibility indicators */}
-                    {!compatibility.isCompatible && (
-                      <div className="absolute top-1 left-1">
-                        <XCircle className="w-3 h-3 text-red-400" />
-                      </div>
-                    )}
-                    {compatibility.warnings.length > 0 &&
-                      compatibility.isCompatible && (
-                        <div className="absolute top-1 left-1">
-                          <AlertTriangle className="w-3 h-3 text-yellow-400" />
-                        </div>
-                      )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="top"
-                  className="max-w-xs p-3 bg-gray-900 border-gray-700"
-                >
-                  <div className="space-y-2">
-                    <div className="font-medium text-white">
-                      {transition.name}
-                    </div>
-                    <div className="text-sm text-gray-300">
-                      {transition.tooltip}
-                    </div>
-
-                    {/* Performance info */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <Cpu className="w-3 h-3" />
-                      <span className="text-gray-400">
-                        Performance: {transition.performance} | Complexity:{" "}
-                        {transition.complexity}
-                      </span>
-                    </div>
-
-                    {/* Compatibility notes */}
-                    {transition.compatibilityNotes &&
-                      transition.compatibilityNotes.length > 0 && (
-                        <div className="space-y-1">
-                          <div className="text-xs font-medium text-blue-400">
-                            Notes:
-                          </div>
-                          {transition.compatibilityNotes.map((note, index) => (
-                            <div
-                              key={index}
-                              className="text-xs text-gray-400 flex items-start gap-1"
-                            >
-                              <Info className="w-2 h-2 mt-0.5 flex-shrink-0" />
-                              {note}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                    {/* Compatibility warnings */}
-                    {compatibility.warnings.length > 0 && (
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-yellow-400">
-                          Warnings:
-                        </div>
-                        {compatibility.warnings.map((warning, index) => (
-                          <div
-                            key={index}
-                            className="text-xs text-yellow-300 flex items-start gap-1"
-                          >
-                            <AlertTriangle className="w-2 h-2 mt-0.5 flex-shrink-0" />
-                            {warning}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Compatibility issues */}
-                    {compatibility.issues.length > 0 && (
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-red-400">
-                          Issues:
-                        </div>
-                        {compatibility.issues.map((issue, index) => (
-                          <div
-                            key={index}
-                            className="text-xs text-red-300 flex items-start gap-1"
-                          >
-                            <XCircle className="w-2 h-2 mt-0.5 flex-shrink-0" />
-                            {issue}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {transition.category === "multi-digit" ? "123" : "123"}
                   </div>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </div>
-      </TooltipProvider>
+                </div>
+
+                {/* Transition name */}
+                <div className="mt-2 text-xs text-white text-center">
+                  {transition.name}
+                </div>
+              </div>
+
+              {/* Category indicators */}
+              {transition.category === "multi-digit" && (
+                <div className="absolute top-1 right-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                </div>
+              )}
+              {transition.category === "advanced" && (
+                <div className="absolute top-1 right-1">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Category information panels */}
       {activeCategory === "multi-digit" && (

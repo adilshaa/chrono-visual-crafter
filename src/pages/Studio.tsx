@@ -13,7 +13,7 @@ import ExportQualityModal from "@/components/ExportQualityModal";
 import { ExportQualityManager } from "@/utils/exportQualityManager";
 import AuthButton from "@/components/auth/AuthButton";
 import { RecordingProvider, useRecording } from "@/contexts/RecordingContext";
-import { Square } from "lucide-react";
+import { Square, Sparkles } from "lucide-react";
 import { useMobileDetection } from "@/hooks/useMobileDetection";
 import MobileBottomPanel from "@/components/MobileBottomPanel";
 import MobileTabNavigation from "@/components/MobileTabNavigation";
@@ -24,6 +24,8 @@ import FontSettings from "@/components/FontSettings";
 import StyleSettings from "@/components/StyleSettings";
 import DesignPreview from "@/components/DesignPreview";
 import { PerformanceIndicator } from "@/components/PerformanceIndicator";
+import WaitingListModal from "@/components/WaitingListModal";
+import { Button } from "@/components/ui/button";
 import type { MobileLayoutState } from "@/types/mobile";
 
 // @ts-ignore
@@ -84,8 +86,8 @@ const StudioContent = () => {
   );
 
   const [counterSettings, setCounterSettings] = useState({
-    startValue: 0,
-    endValue: 100,
+    startValue: 1000,
+    endValue: 2000,
     duration: 5,
     fontFamily: "roboto",
     fontSize: 120,
@@ -132,7 +134,7 @@ const StudioContent = () => {
     chromeColors: "linear-gradient(45deg, #FFFFFF, #CCCCCC, #999999)",
   });
 
-  const [currentValue, setCurrentValue] = useState(0);
+  const [currentValue, setCurrentValue] = useState(1000);
   const [isGeneratingGif, setIsGeneratingGif] = useState(false);
   const [cancelGifGeneration, setCancelGifGeneration] = useState(false);
 
@@ -143,6 +145,7 @@ const StudioContent = () => {
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [showTransparentExport, setShowTransparentExport] = useState(false);
   const [showExportQuality, setShowExportQuality] = useState(false);
+  const [showWaitingList, setShowWaitingList] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -751,15 +754,16 @@ const StudioContent = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 text-sm text-gray-400 px-3 py-1 rounded border border-[#2BA6FF]/30">
-              <span className="hidden sm:inline">Recording : </span>
-              <span className="font-mono text-[#2BA6FF]">
-                {(recordingTime / 1000).toFixed(1)}s
-              </span>
-              {isRecording && (
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              )}
-            </div>
+            {/* Waiting List Button */}
+            <Button
+              onClick={() => setShowWaitingList(true)}
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex items-center gap-1 border-[#2BA6FF]/30 hover:bg-[#2BA6FF]/10 text-[#2BA6FF]"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Join Waiting List</span>
+            </Button>
 
             {/* Performance Indicator */}
 
@@ -855,6 +859,19 @@ const StudioContent = () => {
                 onTabChange={handleMobileTabChange}
                 isRecording={mobileLayoutState.isRecording}
               />
+
+              {/* Mobile Waiting List Button - Fixed at bottom right */}
+              {!mobileLayoutState.isRecording && (
+                <div className="absolute bottom-20 right-4">
+                  <Button
+                    onClick={() => setShowWaitingList(true)}
+                    size="sm"
+                    className="rounded-full h-12 w-12 bg-[#2BA6FF] hover:bg-[#2BA6FF]/80 shadow-lg flex items-center justify-center"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Mobile Bottom Panel */}
@@ -1024,6 +1041,12 @@ const StudioContent = () => {
           recordedChunks.current.length > 0 || videoBlob !== null
         }
         isExporting={isProcessingVideo}
+      />
+
+      {/* Waiting List Modal */}
+      <WaitingListModal
+        isOpen={showWaitingList}
+        onClose={() => setShowWaitingList(false)}
       />
     </div>
   );

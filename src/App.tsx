@@ -39,28 +39,28 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/about" element={<About />} />
+                {/* <Route path="/pricing" element={<Pricing />} />
+                <Route path="/checkout" element={<Checkout />} /> */}
+                {/* <Route path="/about" element={<About />} /> */}
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsConditions />} />
 
                 <Route
                   path="/studio"
                   element={
-                    <ProtectedRoute>
+                    // <ProtectedRoute>
                       <Studio />
-                    </ProtectedRoute>
+                    // </ProtectedRoute>
                   }
                 />
-                <Route
+                {/* <Route
                   path="/account"
                   element={
                     <ProtectedRoute>
                       <UserManagement />
                     </ProtectedRoute>
                   }
-                />
+                /> */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </PaddleProvider>
