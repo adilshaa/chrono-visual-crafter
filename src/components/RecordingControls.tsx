@@ -235,7 +235,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
                     {isProcessingVideo ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                      <Film className="w-5 h-5" />
+                      <Download className="w-5 h-5" />
                     )}
                   </Button>
                 )}

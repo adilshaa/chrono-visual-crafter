@@ -77,6 +77,10 @@ export interface DesignSettings {
 
 // Import shared utilities to ensure consistency with CounterPreview
 
+export interface ExportProgressCallback {
+  (progress: number, status: string): void;
+}
+
 export class TransparentCounterExporter {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -85,6 +89,7 @@ export class TransparentCounterExporter {
   private textSettings: TextSettings;
   private designSettings: DesignSettings;
   private previousValue: number = 0;
+  private progressCallback?: ExportProgressCallback;
   private digitTransitions: Map<
     number,
     { oldDigit: string; newDigit: string; progress: number }
@@ -157,42 +162,137 @@ export class TransparentCounterExporter {
         const neonColor = this.designSettings.neonColor || "#00FFFF";
         const intensity = this.designSettings.neonIntensity || 10;
 
-        this.ctx.save();
+        // Use contained rendering for transparent exports
+        if (this.exportOptions.format === "png-sequence") {
+          // Create a temporary canvas for contained neon effect
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = this.canvas.width;
+          tempCanvas.height = this.canvas.height;
+          const tempCtx = tempCanvas.getContext("2d", { alpha: true });
 
-        // Exact same rendering as DesignPreview component
-        this.ctx.shadowColor = neonColor;
-        this.ctx.shadowBlur = intensity;
-        this.ctx.fillStyle = neonColor;
-        this.ctx.fillText(text, x, y);
+          if (tempCtx) {
+            // Clear temp canvas
+            tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-        // Additional glow layers to match DesignPreview exactly
-        this.ctx.shadowBlur = intensity * 2;
-        this.ctx.fillText(text, x, y);
+            // Set up text properties
+            tempCtx.font = this.ctx.font;
+            tempCtx.textAlign = "center";
+            tempCtx.textBaseline = "middle";
 
-        this.ctx.shadowBlur = intensity * 3;
-        this.ctx.fillStyle = "#FFFFFF";
-        this.ctx.fillText(text, x, y);
+            // Draw base text first (no glow)
+            tempCtx.fillStyle = neonColor;
+            tempCtx.fillText(text, x, y);
 
-        this.ctx.restore();
+            // Apply controlled blur
+            const blurredCanvas = this.applyControlledBlur(
+              tempCanvas,
+              Math.min(intensity * 1.5, 12), // Limit blur radius
+              neonColor
+            );
+
+            // Draw the blurred result onto main canvas
+            this.ctx.drawImage(blurredCanvas, 0, 0);
+
+            // Draw sharp text on top for clarity
+            this.ctx.fillStyle = "#FFFFFF";
+            this.ctx.fillText(text, x, y);
+          } else {
+            // Fallback to standard rendering if temp canvas fails
+            this.ctx.save();
+            this.ctx.shadowColor = neonColor;
+            this.ctx.shadowBlur = intensity;
+            this.ctx.fillStyle = neonColor;
+            this.ctx.fillText(text, x, y);
+            this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = "#FFFFFF";
+            this.ctx.fillText(text, x, y);
+            this.ctx.restore();
+          }
+        } else {
+          // Standard rendering for WebM or other formats
+          this.ctx.save();
+
+          // Exact same rendering as DesignPreview component
+          this.ctx.shadowColor = neonColor;
+          this.ctx.shadowBlur = intensity;
+          this.ctx.fillStyle = neonColor;
+          this.ctx.fillText(text, x, y);
+
+          // Additional glow layers to match DesignPreview exactly
+          this.ctx.shadowBlur = intensity * 2;
+          this.ctx.fillText(text, x, y);
+
+          this.ctx.shadowBlur = intensity * 3;
+          this.ctx.fillStyle = "#FFFFFF";
+          this.ctx.fillText(text, x, y);
+
+          this.ctx.restore();
+        }
       },
 
       glow: () => {
         const glowColor = this.designSettings.glowColor || "#FFFFFF";
         const intensity = this.designSettings.glowIntensity || 15;
 
-        this.ctx.save();
+        // Use contained rendering for transparent exports
+        if (this.exportOptions.format === "png-sequence") {
+          // Create a temporary canvas for contained glow effect
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = this.canvas.width;
+          tempCanvas.height = this.canvas.height;
+          const tempCtx = tempCanvas.getContext("2d", { alpha: true });
 
-        // Exact same rendering as DesignPreview component
-        this.ctx.shadowColor = glowColor;
-        this.ctx.shadowBlur = intensity;
-        this.ctx.fillStyle = glowColor;
-        this.ctx.fillText(text, x, y);
+          if (tempCtx) {
+            // Clear temp canvas
+            tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-        // Additional glow layer to match DesignPreview exactly
-        this.ctx.shadowBlur = intensity * 1.5;
-        this.ctx.fillText(text, x, y);
+            // Set up text properties
+            tempCtx.font = this.ctx.font;
+            tempCtx.textAlign = "center";
+            tempCtx.textBaseline = "middle";
 
-        this.ctx.restore();
+            // Draw base text first (no glow)
+            tempCtx.fillStyle = glowColor;
+            tempCtx.fillText(text, x, y);
+
+            // Apply controlled blur
+            const blurredCanvas = this.applyControlledBlur(
+              tempCanvas,
+              Math.min(intensity, 10), // Limit blur radius
+              glowColor
+            );
+
+            // Draw the blurred result onto main canvas
+            this.ctx.drawImage(blurredCanvas, 0, 0);
+
+            // Draw sharp text on top for clarity
+            this.ctx.fillStyle = glowColor;
+            this.ctx.fillText(text, x, y);
+          } else {
+            // Fallback to standard rendering if temp canvas fails
+            this.ctx.save();
+            this.ctx.shadowColor = glowColor;
+            this.ctx.shadowBlur = intensity;
+            this.ctx.fillStyle = glowColor;
+            this.ctx.fillText(text, x, y);
+            this.ctx.restore();
+          }
+        } else {
+          // Standard rendering for WebM or other formats
+          this.ctx.save();
+
+          // Exact same rendering as DesignPreview component
+          this.ctx.shadowColor = glowColor;
+          this.ctx.shadowBlur = intensity;
+          this.ctx.fillStyle = glowColor;
+          this.ctx.fillText(text, x, y);
+
+          // Additional glow layer to match DesignPreview exactly
+          this.ctx.shadowBlur = intensity * 1.5;
+          this.ctx.fillText(text, x, y);
+
+          this.ctx.restore();
+        }
       },
 
       gradient: () => {
@@ -460,6 +560,93 @@ export class TransparentCounterExporter {
     }
 
     this.previousValue = currentValue;
+  }
+
+  /**
+   * Apply a controlled blur effect to prevent color bleeding in transparent exports
+   * This method creates a more contained glow/neon effect than standard shadowBlur
+   */
+  private applyControlledBlur(
+    sourceCanvas: HTMLCanvasElement,
+    blurRadius: number,
+    color: string
+  ): HTMLCanvasElement {
+    // Create a new canvas for the blurred result
+    const blurredCanvas = document.createElement("canvas");
+    blurredCanvas.width = sourceCanvas.width;
+    blurredCanvas.height = sourceCanvas.height;
+
+    const blurCtx = blurredCanvas.getContext("2d", {
+      alpha: true,
+      premultipliedAlpha: false,
+    });
+
+    if (!blurCtx) {
+      return sourceCanvas; // Fallback if context creation fails
+    }
+
+    // Clear with full transparency
+    blurCtx.clearRect(0, 0, blurredCanvas.width, blurredCanvas.height);
+
+    // Apply multiple passes of smaller blurs for better quality
+    const passes = 3;
+    const passRadius = blurRadius / passes;
+
+    // First pass - draw original content
+    blurCtx.drawImage(sourceCanvas, 0, 0);
+
+    // Create a temporary canvas for multi-pass blur
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = sourceCanvas.width;
+    tempCanvas.height = sourceCanvas.height;
+    const tempCtx = tempCanvas.getContext("2d", { alpha: true });
+
+    if (!tempCtx) {
+      return blurredCanvas;
+    }
+
+    // Apply multiple blur passes with decreasing intensity
+    for (let i = 0; i < passes; i++) {
+      // Copy current state to temp canvas
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.drawImage(blurredCanvas, 0, 0);
+
+      // Apply blur with decreasing radius
+      const currentRadius = (passRadius * (passes - i)) / passes;
+
+      // Use CSS filter for blur
+      blurCtx.filter = `blur(${currentRadius}px)`;
+      blurCtx.clearRect(0, 0, blurredCanvas.width, blurredCanvas.height);
+      blurCtx.drawImage(tempCanvas, 0, 0);
+      blurCtx.filter = "none";
+    }
+
+    // Apply alpha threshold to remove very faint edges that cause bleeding
+    const imageData = blurCtx.getImageData(
+      0,
+      0,
+      blurredCanvas.width,
+      blurredCanvas.height
+    );
+    const data = imageData.data;
+
+    // Threshold to remove very faint glow that causes bleeding
+    const threshold = 10;
+
+    for (let i = 0; i < data.length; i += 4) {
+      // If pixel is very faint, make it fully transparent
+      if (data[i + 3] < threshold) {
+        data[i + 3] = 0;
+      }
+      // Otherwise enhance the alpha slightly for better visibility
+      else if (data[i + 3] < 200) {
+        data[i + 3] = Math.min(255, data[i + 3] * 1.2);
+      }
+    }
+
+    blurCtx.putImageData(imageData, 0, 0);
+
+    return blurredCanvas;
   }
 
   private drawMultiDigitCounter(
@@ -748,6 +935,11 @@ export class TransparentCounterExporter {
       this.exportOptions.frameRate * this.exportOptions.duration
     );
 
+    // Report initial progress
+    if (this.progressCallback) {
+      this.progressCallback(0, "Initializing PNG sequence generation...");
+    }
+
     toast.info(
       `Generating optimized PNG sequence with enhanced transparency...`
     );
@@ -822,6 +1014,18 @@ export class TransparentCounterExporter {
         throw new Error("Export cancelled");
       }
 
+      // Report progress - only update every few frames to avoid excessive UI updates
+      if (
+        this.progressCallback &&
+        (frame % 5 === 0 || frame === frameCount - 1)
+      ) {
+        const progress = Math.round((frame / frameCount) * 100);
+        this.progressCallback(
+          progress,
+          `Generating frame ${frame + 1} of ${frameCount}...`
+        );
+      }
+
       const value = values[frame];
       const easedProgress = easedProgresses[frame];
 
@@ -842,15 +1046,85 @@ export class TransparentCounterExporter {
       // Apply transparency optimizations
       let optimizedCanvas = this.canvas;
 
-      // Enhance alpha channel preservation
+      // First enhance alpha channel preservation
       optimizedCanvas =
         TransparentExportOptimizer.enhanceAlphaChannelPreservation(
           optimizedCanvas,
           transparentSettings
         );
 
-      // Optimize special effects if present
-      if (hasSpecialEffects) {
+      // Apply special handling for neon and glow effects to prevent bleeding
+      if (["neon", "glow"].includes(this.counterSettings.design)) {
+        // Use our new fixGlowBleeding method for these specific effects
+        optimizedCanvas = TransparentExportOptimizer.fixGlowBleeding(
+          optimizedCanvas,
+          transparentSettings
+        );
+
+        // Apply additional alpha threshold to completely eliminate any remaining bleeding
+        const imageData = optimizedCanvas
+          .getContext("2d")
+          ?.getImageData(0, 0, optimizedCanvas.width, optimizedCanvas.height);
+
+        if (imageData) {
+          const data = imageData.data;
+          // Use more aggressive threshold for neon effects which tend to bleed more
+          const threshold = this.counterSettings.design === "neon" ? 20 : 15;
+
+          // Apply more aggressive threshold for very faint pixels
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const a = data[i + 3];
+
+            // If this is a very faint pixel (likely bleeding from glow/neon)
+            if (a > 0 && a < threshold) {
+              // Check if it's an isolated pixel (more likely to be bleeding)
+              const x = (i / 4) % optimizedCanvas.width;
+              const y = Math.floor(i / 4 / optimizedCanvas.width);
+              let isIsolated = true;
+
+              // Check surrounding pixels in a small radius
+              const checkRadius = 2;
+              for (
+                let dy = -checkRadius;
+                dy <= checkRadius && isIsolated;
+                dy++
+              ) {
+                for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+                  if (dx === 0 && dy === 0) continue;
+
+                  const nx = x + dx;
+                  const ny = y + dy;
+
+                  if (
+                    nx >= 0 &&
+                    nx < optimizedCanvas.width &&
+                    ny >= 0 &&
+                    ny < optimizedCanvas.height
+                  ) {
+                    const ni = (ny * optimizedCanvas.width + nx) * 4;
+                    if (imageData.data[ni + 3] > 100) {
+                      isIsolated = false;
+                      break;
+                    }
+                  }
+                }
+              }
+
+              // Remove isolated faint pixels completely
+              if (isIsolated) {
+                data[i + 3] = 0;
+              }
+            }
+          }
+
+          optimizedCanvas.getContext("2d")?.putImageData(imageData, 0, 0);
+        }
+      }
+      // Optimize other special effects if present
+      else if (hasSpecialEffects) {
         optimizedCanvas =
           TransparentExportOptimizer.optimizeSpecialEffectsTransparency(
             optimizedCanvas,
@@ -1169,6 +1443,14 @@ export class TransparentCounterExporter {
   private async generateWebMWithAlpha(
     checkCancellation?: () => boolean
   ): Promise<Blob> {
+    // Report initial progress
+    if (this.progressCallback) {
+      this.progressCallback(
+        0,
+        "Initializing WebM with alpha channel generation..."
+      );
+    }
+
     toast.info("Generating optimized WebM with enhanced alpha channel...");
 
     // Configure transparency optimization settings for WebM
@@ -1273,6 +1555,18 @@ export class TransparentCounterExporter {
           recorder.stop();
           stream.getTracks().forEach((track) => track.stop());
           return;
+        }
+
+        // Report progress - only update every few frames to avoid excessive UI updates
+        if (
+          this.progressCallback &&
+          (currentFrame % 5 === 0 || currentFrame === frameCount - 1)
+        ) {
+          const progress = Math.round((currentFrame / frameCount) * 100);
+          this.progressCallback(
+            progress,
+            `Generating WebM frame ${currentFrame + 1} of ${frameCount}...`
+          );
         }
 
         const value = values[currentFrame];
@@ -1711,8 +2005,16 @@ export class TransparentCounterExporter {
   }
 
   async export(
-    checkCancellation?: () => boolean
+    checkCancellation?: () => boolean,
+    progressCallback?: ExportProgressCallback
   ): Promise<{ pngSequence?: Blob; webmAlpha?: Blob }> {
+    // Store the progress callback for use in other methods
+    this.progressCallback = progressCallback;
+
+    // Initialize progress
+    if (this.progressCallback) {
+      this.progressCallback(0, "Starting export process...");
+    }
     const results: { pngSequence?: Blob; webmAlpha?: Blob } = {};
 
     try {
@@ -1720,6 +2022,9 @@ export class TransparentCounterExporter {
         this.exportOptions.format === "png-sequence" ||
         this.exportOptions.format === "both"
       ) {
+        if (this.progressCallback) {
+          this.progressCallback(0, "Starting PNG sequence generation...");
+        }
         toast.info("Generating PNG sequence with alpha channel...");
         results.pngSequence = await this.generatePNGSequence(checkCancellation);
 
@@ -1727,14 +2032,43 @@ export class TransparentCounterExporter {
         if (checkCancellation && checkCancellation()) {
           return results;
         }
+
+        // Report progress for PNG completion
+        if (this.progressCallback && this.exportOptions.format === "both") {
+          this.progressCallback(
+            50,
+            "PNG sequence completed. Starting WebM generation..."
+          );
+        } else if (this.progressCallback) {
+          this.progressCallback(
+            90,
+            "PNG sequence completed. Finalizing export..."
+          );
+        }
       }
 
       if (
         this.exportOptions.format === "webm-alpha" ||
         this.exportOptions.format === "both"
       ) {
+        // If we're only generating WebM, start from 0%
+        if (
+          this.exportOptions.format === "webm-alpha" &&
+          this.progressCallback
+        ) {
+          this.progressCallback(0, "Starting WebM video generation...");
+        }
+
         toast.info("Generating WebM video with alpha channel...");
         results.webmAlpha = await this.generateWebMWithAlpha(checkCancellation);
+
+        // Report progress for WebM completion
+        if (this.progressCallback) {
+          this.progressCallback(
+            90,
+            "WebM video completed. Finalizing export..."
+          );
+        }
       }
 
       return results;

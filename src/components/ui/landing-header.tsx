@@ -61,13 +61,11 @@ export const LandingHeader = () => {
             : "bg-transparent"
         }`}
       >
-        <div className="flex items-center">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-            <span className="font-bold">⚡</span>
+        <div className="flex items-center px-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full ">
+            <img src="/favicon.ico" className="font-bold" />
           </div>
-          <span className="ml-2 text-xl font-bold text-white">
-            Chrono Visual
-          </span>
+          <span className="ml-2 text-xl font-bold text-white">Countflow</span>
         </div>
 
         {/* Desktop Navigation */}
@@ -108,12 +106,12 @@ export const LandingHeader = () => {
             className="fixed inset-0 z-50 flex flex-col p-4 bg-black/95 md:hidden"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-                  <span className="font-bold">⚡</span>
+              <div className="flex items-center px-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full ">
+                  <img src="/favicon.ico" className="font-bold" />
                 </div>
                 <span className="ml-2 text-xl font-bold text-white">
-                  Chrono Visual
+                  Countflow
                 </span>
               </div>
               <button onClick={() => setMobileMenuOpen(false)}>

@@ -46,12 +46,12 @@ const Hero2 = () => {
               : "bg-transparent"
           }`}
         >
-          <div className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-              <span className="font-bold">⚡</span>
+          <div className="flex items-center px-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full ">
+              <img src="/favicon.ico" className="font-bold" />
             </div>
             <span className="ml-2 text-xl font-bold text-white">
-              Chrono Visual
+              Countflow
             </span>
           </div>
 
@@ -65,7 +65,7 @@ const Hero2 = () => {
             </div>
             <div className="flex items-center space-x-3">
               {/* <ThemeToggle /> */}
-              <AuthButton />
+              {/* <AuthButton /> */}
             </div>
           </div>
 
@@ -96,10 +96,10 @@ const Hero2 = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-                    <span className="font-bold">⚡</span>
+                    <img src="/favicon.ico" className="font-bold" />
                   </div>
                   <span className="ml-2 text-xl font-bold text-white">
-                    Chrono Visual
+                    Countflow
                   </span>
                 </div>
                 <button onClick={() => setMobileMenuOpen(false)}>

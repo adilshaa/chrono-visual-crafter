@@ -561,4 +561,224 @@ export class TransparentExportOptimizer {
 
     ctx.putImageData(new ImageData(output, width, height), 0, 0);
   }
+
+  /**
+   * NEW: Render neon/glow effects with contained boundaries
+   * This method creates a special rendering of neon and glow effects
+   * that prevents color bleeding in transparent exports
+   */
+  static renderContainedGlowEffect(
+    canvas: HTMLCanvasElement,
+    text: string,
+    x: number,
+    y: number,
+    fontSize: number,
+    fontFamily: string,
+    fontWeight: number | string,
+    color: string,
+    intensity: number,
+    isNeon: boolean
+  ): HTMLCanvasElement {
+    // Create a new canvas for contained rendering
+    const containedCanvas = document.createElement("canvas");
+    containedCanvas.width = canvas.width;
+    containedCanvas.height = canvas.height;
+
+    const ctx = containedCanvas.getContext("2d", {
+      alpha: true,
+      premultipliedAlpha: false,
+    });
+
+    if (!ctx) {
+      return canvas; // Fallback to original canvas if context creation fails
+    }
+
+    // Clear with full transparency
+    ctx.clearRect(0, 0, containedCanvas.width, containedCanvas.height);
+
+    // Set up text rendering
+    ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Step 1: Create a mask of the text (solid shape only)
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillText(text, x, y);
+
+    // Step 2: Create a temporary canvas for the glow effect
+    const glowCanvas = document.createElement("canvas");
+    glowCanvas.width = containedCanvas.width;
+    glowCanvas.height = containedCanvas.height;
+
+    const glowCtx = glowCanvas.getContext("2d", {
+      alpha: true,
+      premultipliedAlpha: false,
+    });
+
+    if (!glowCtx) {
+      return containedCanvas;
+    }
+
+    // Step 3: Draw text on glow canvas
+    glowCtx.font = ctx.font;
+    glowCtx.textAlign = ctx.textAlign;
+    glowCtx.textBaseline = ctx.textBaseline;
+
+    // Apply glow effect with controlled spread
+    const maxBlur = isNeon
+      ? Math.min(intensity * 1.5, 15)
+      : Math.min(intensity, 12);
+
+    // For neon effect
+    if (isNeon) {
+      // Draw multiple layers with decreasing blur for better containment
+      for (let blur = maxBlur; blur > 0; blur -= 3) {
+        glowCtx.save();
+        glowCtx.shadowColor = color;
+        glowCtx.shadowBlur = blur;
+        glowCtx.fillStyle = color;
+        glowCtx.fillText(text, x, y);
+        glowCtx.restore();
+      }
+
+      // Draw sharp text on top
+      glowCtx.fillStyle = "#FFFFFF";
+      glowCtx.fillText(text, x, y);
+    }
+    // For glow effect
+    else {
+      // Draw multiple layers with decreasing blur
+      for (let blur = maxBlur; blur > 0; blur -= 2) {
+        glowCtx.save();
+        glowCtx.shadowColor = color;
+        glowCtx.shadowBlur = blur;
+        glowCtx.fillStyle = color;
+        glowCtx.fillText(text, x, y);
+        glowCtx.restore();
+      }
+
+      // Draw sharp text on top
+      glowCtx.fillStyle = color;
+      glowCtx.fillText(text, x, y);
+    }
+
+    // Step 4: Apply alpha threshold to remove bleeding
+    const imageData = glowCtx.getImageData(
+      0,
+      0,
+      glowCanvas.width,
+      glowCanvas.height
+    );
+    const data = imageData.data;
+
+    // Threshold to remove very faint glow that causes bleeding
+    const threshold = isNeon ? 15 : 10;
+
+    for (let i = 0; i < data.length; i += 4) {
+      // If pixel is very faint, make it fully transparent
+      if (data[i + 3] < threshold) {
+        data[i + 3] = 0;
+      }
+      // Otherwise enhance the alpha slightly for better visibility
+      else if (data[i + 3] < 200) {
+        data[i + 3] = Math.min(255, data[i + 3] * 1.2);
+      }
+    }
+
+    glowCtx.putImageData(imageData, 0, 0);
+
+    // Step 5: Draw the glow canvas onto the main canvas
+    ctx.drawImage(glowCanvas, 0, 0);
+
+    return containedCanvas;
+  }
+
+  /**
+   * NEW: Process an entire canvas to fix glow/neon bleeding
+   * This method analyzes the canvas and applies fixes to any detected glow/neon effects
+   */
+  static fixGlowBleeding(
+    canvas: HTMLCanvasElement,
+    settings: TransparentExportSettings
+  ): HTMLCanvasElement {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return canvas;
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    // Create a new canvas for the fixed content
+    const fixedCanvas = document.createElement("canvas");
+    fixedCanvas.width = canvas.width;
+    fixedCanvas.height = canvas.height;
+
+    const fixedCtx = fixedCanvas.getContext("2d");
+    if (!fixedCtx) return canvas;
+
+    // Copy the original canvas
+    fixedCtx.drawImage(canvas, 0, 0);
+
+    // Apply a more aggressive alpha threshold to remove bleeding
+    const fixedImageData = fixedCtx.getImageData(
+      0,
+      0,
+      fixedCanvas.width,
+      fixedCanvas.height
+    );
+    const fixedData = fixedImageData.data;
+
+    // Detect glow areas (semi-transparent pixels with color)
+    for (let i = 0; i < fixedData.length; i += 4) {
+      const r = fixedData[i];
+      const g = fixedData[i + 1];
+      const b = fixedData[i + 2];
+      const a = fixedData[i + 3];
+
+      // If this is a very faint pixel (likely bleeding from glow/neon)
+      if (a > 0 && a < 30) {
+        // Check if it's isolated (not part of the main text)
+        let isIsolated = true;
+
+        // Check surrounding pixels (simplified check)
+        const x = (i / 4) % fixedCanvas.width;
+        const y = Math.floor(i / 4 / fixedCanvas.width);
+
+        // If any surrounding pixel has strong alpha, this might be part of the main effect
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+
+            const nx = x + dx;
+            const ny = y + dy;
+
+            if (
+              nx >= 0 &&
+              nx < fixedCanvas.width &&
+              ny >= 0 &&
+              ny < fixedCanvas.height
+            ) {
+              const ni = (ny * fixedCanvas.width + nx) * 4;
+              if (fixedData[ni + 3] > 100) {
+                isIsolated = false;
+                break;
+              }
+            }
+          }
+          if (!isIsolated) break;
+        }
+
+        // If it's an isolated faint pixel, remove it completely
+        if (isIsolated) {
+          fixedData[i + 3] = 0;
+        }
+        // Otherwise, if it's part of the main effect but still very faint, enhance it slightly
+        else if (a < 15) {
+          fixedData[i + 3] = 0; // Still remove very faint edges
+        }
+      }
+    }
+
+    fixedCtx.putImageData(fixedImageData, 0, 0);
+    return fixedCanvas;
+  }
 }

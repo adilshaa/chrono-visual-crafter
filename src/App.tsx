@@ -32,9 +32,10 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ClerkAuthWrapper>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
+          {/* <PaddleProvider> */}
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
               <Routes>
                 <Route path="/" element={<Landing />} />
                 {/* <Route path="/auth" element={<Auth />} /> */}
@@ -48,7 +49,7 @@ const App = () => {
                   path="/studio"
                   element={
                     // <ProtectedRoute>
-                      <Studio />
+                    <Studio />
                     // </ProtectedRoute>
                   }
                 />
@@ -62,7 +63,8 @@ const App = () => {
                 /> */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-          </TooltipProvider>
+            </TooltipProvider>
+          {/* </PaddleProvider> */}
         </ClerkAuthWrapper>
       </BrowserRouter>
     </QueryClientProvider>

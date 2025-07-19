@@ -744,16 +744,16 @@ const StudioContent = () => {
   return (
     <div className="h-screen bg-[#101010] text-white flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="border-b border-gray-100/10 bg-[#171717] px-4 sm:px-6 py-3 sticky top-0 z-30 flex-shrink-0">
+      <header className="border-b border-gray-100/10 bg-[#171717] px-4 sm:px-4 py-3 sticky top-0 z-30 flex-shrink-0">
         <div className="flex flex-row flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <img src="/favicon.ico" alt="Logo" className="w-8 h-8 rounded" />
+          <div className="flex items-center gap-2">
+            <img src="/favicon.ico" alt="Logo" className="w-10 h-10 rounded " />
             <h1 className="text-xl sm:text-2xl font-bold text-white">
-              Countable
+              Countflow
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center">
             {/* Waiting List Button */}
             <Button
               onClick={() => setShowWaitingList(true)}
@@ -768,7 +768,7 @@ const StudioContent = () => {
             {/* Performance Indicator */}
 
             <div className="flex items-center gap-2 ">
-              {user && <AuthButton mode="user" />}
+              {/* {user && <AuthButton mode="user" />} */}
             </div>
           </div>
         </div>
@@ -952,8 +952,8 @@ const StudioContent = () => {
             <div className="flex-1 flex flex-col transition-all duration-300 overflow-hidden h-full">
               {/* Preview Area - Centered */}
               <div className="flex-1 flex justify-center items-start bg-[#0c0c0c] pt-3">
-                <div className="max-w-[800px] w-full flex flex-col items-center justify-start">
-                  <div className="w-full aspect-video flex items-start justify-center rounded-lg overflow-hidden bg-[#080808] shadow-2xl border border-white/5">
+                <div className="max-w-[870px] w-full max-h-[500px] flex flex-col items-center justify-start">
+                  <div className="w-full aspect-video flex items-start justify-center rounded-lg overflow-hidden bg-[#000000] shadow-2xl border border-white/5">
                     {isPreviewingVideo && videoPreviewUrl ? (
                       <div className="relative w-full h-full">
                         <video

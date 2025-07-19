@@ -142,12 +142,10 @@ const WaitingListModal: React.FC<WaitingListModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
               <p className="text-sm text-gray-400">
-                Explore the advantages of being an early user: priority access
-                to new features, exclusive promotions, and the opportunity to
-                shape the future of our platform.
+                Explore the advantages of being an early user.. 
               </p>
 
-              <div className="bg-[#0c0c0c] p-4 rounded-lg border border-gray-800">
+              <div className="bg-[#0c0c0c] p-4 rounded-lg border border-gray-800 ">
                 <div className="flex flex-col space-y-2">
                   <label htmlFor="email" className="text-sm text-gray-300">
                     Email Address

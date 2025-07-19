@@ -220,8 +220,8 @@ const MobileRecordingControls: React.FC<MobileRecordingControlsProps> = ({
                   onClick={onDownloadVideo}
                   disabled={
                     recordedChunksLength === 0 ||
-                    isProcessingVideo ||
-                    !hasCredits
+                    isProcessingVideo 
+                    
                   }
                   size="lg"
                   className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 hover:text-blue-300 hover:bg-blue-500/30 disabled:opacity-30 disabled:cursor-not-allowed border border-blue-400/30"
@@ -230,7 +230,7 @@ const MobileRecordingControls: React.FC<MobileRecordingControlsProps> = ({
                   {isProcessingVideo ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Film className="w-5 h-5" />
+                    <Download className="w-5 h-5" />
                   )}
                 </Button>
               </TooltipTrigger>

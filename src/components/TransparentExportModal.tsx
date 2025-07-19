@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -23,6 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useClerkAuth } from "@/hooks/useClerkAuth";
 import {
@@ -37,6 +36,7 @@ import {
   Smartphone,
   Tv,
   CheckCircle,
+  BarChart2,
 } from "lucide-react";
 import {
   TransparentCounterExporter,
@@ -92,6 +92,8 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [customSize, setCustomSize] = useState({ width: 800, height: 600 });
   const [isCancelRequested, setIsCancelRequested] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState("");
   const { toast } = useToast();
   const { user, profile, updateProfile, refreshProfile } = useClerkAuth();
 
@@ -143,6 +145,8 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
 
     setIsExporting(true);
     setIsCancelRequested(false);
+    setExportProgress(0);
+    setExportStatus("Initializing export...");
 
     try {
       const exporter = new TransparentCounterExporter(
@@ -152,9 +156,20 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
         designSettings
       );
 
+      // Add progress callback function
+      const progressCallback = (progress: number, status: string) => {
+        setExportProgress(progress);
+        setExportStatus(status);
+      };
+
       // Add cancellation check function
       const checkCancellation = () => isCancelRequested;
-      const exports = await exporter.export(checkCancellation);
+
+      // Pass both the cancellation check and progress callback
+      const exports = await exporter.export(
+        checkCancellation,
+        progressCallback
+      );
 
       // If cancelled, don't download exports
       if (isCancelRequested) {
@@ -165,6 +180,9 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
         setIsExporting(false);
         return;
       }
+
+      setExportProgress(100);
+      setExportStatus("Preparing download...");
 
       await TransparentCounterExporter.downloadExports(
         exports,
@@ -672,13 +690,44 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
           </TabsContent>
         </Tabs>
 
+        {/* Export Progress Bar */}
+        {isExporting && (
+          <div className="mb-4">
+            <Card className="bg-[#171717]/80 border border-white/[0.08] overflow-hidden">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart2 className="w-4 h-4 text-[#2BA6FF]" />
+                    <span className="text-sm text-white font-medium">
+                      Export Progress
+                    </span>
+                  </div>
+                  <span className="text-sm text-[#2BA6FF] font-medium">
+                    {Math.round(exportProgress)}%
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <Progress
+                    value={exportProgress}
+                    className="h-1.5 bg-white/10"
+                    indicatorClassName="bg-[#2BA6FF]"
+                  />
+                  <p className="text-xs text-white/60">{exportStatus}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <div className="flex gap-3 pt-4 border-t border-white/[0.08]">
-          {/* <Button
+          <Button
             variant="outline"
             onClick={() => {
               if (isExporting && !isCancelRequested) {
                 // Request cancellation of the export process
                 setIsCancelRequested(true);
+                setExportStatus("Cancelling export process...");
                 toast({
                   title: "Cancelling Export",
                   description: "Cancelling the export process...",
@@ -701,7 +750,7 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
             ) : (
               "Cancel"
             )}
-          </Button> */}
+          </Button>
           <Button
             onClick={handleExport}
             disabled={
