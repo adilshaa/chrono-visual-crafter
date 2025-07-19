@@ -54,7 +54,6 @@ export class TransitionEngineIntegration {
       // Initialize performance monitoring
       if (this.config.enablePerformanceMonitoring) {
         performanceMonitor.startMonitoring();
-        console.log("✓ Performance monitoring initialized");
       }
 
       // Initialize performance optimizer
@@ -77,21 +76,17 @@ export class TransitionEngineIntegration {
         });
 
         performanceOptimizer.startOptimization();
-        console.log("✓ Performance optimizer initialized");
       }
 
       // Initialize memory management
       if (this.config.enableMemoryManagement) {
         memoryManager.startPeriodicCleanup();
-        console.log("✓ Memory management initialized");
       }
 
       // Initialize transition engine
       await transitionEngine.initialize();
-      console.log("✓ Transition engine initialized");
 
       this.isInitialized = true;
-      console.log("✓ Transition engine integration initialized successfully");
     } catch (error) {
       console.error(
         "Failed to initialize transition engine integration:",
@@ -326,8 +321,6 @@ export class TransitionEngineIntegration {
     this.activeTransitions.clear();
     this.renderCallbacks = [];
     this.isInitialized = false;
-
-    console.log("✓ Transition engine integration destroyed");
   }
 }
 

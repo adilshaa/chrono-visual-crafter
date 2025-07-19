@@ -28,7 +28,6 @@ export class SubscriptionAuditLogger {
         console.error("Error logging subscription cancellation:", error);
         // Don't throw error as this is non-critical logging
       } else {
-        console.log("Subscription cancellation logged successfully");
       }
     } catch (error) {
       console.error(
@@ -64,7 +63,6 @@ export class SubscriptionAuditLogger {
       if (error) {
         console.error("Error logging subscription activation:", error);
       } else {
-        console.log("Subscription activation logged successfully");
       }
     } catch (error) {
       console.error("Exception while logging subscription activation:", error);
@@ -100,7 +98,6 @@ export class SubscriptionAuditLogger {
       if (error) {
         console.error("Error logging subscription status change:", error);
       } else {
-        console.log("Subscription status change logged successfully");
       }
     } catch (error) {
       console.error(

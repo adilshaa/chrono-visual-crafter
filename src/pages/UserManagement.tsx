@@ -188,7 +188,7 @@ const StudioContent = () => {
 
   const handleStartRecording = () => {
     if (isRecording) return;
-    console.log("Starting recording...");
+
     setRecordingTime(0);
     recordedChunks.current = [];
     setVideoBlob(null);
@@ -246,7 +246,7 @@ const StudioContent = () => {
 
   const handleStopRecording = () => {
     if (!isRecording) return;
-    console.log("Stopping recording...");
+
     setIsRecording(false);
     if (mediaRecorder.current) {
       mediaRecorder.current.stop();
@@ -389,7 +389,6 @@ const StudioContent = () => {
         hasTransparency ? " with transparency support" : ""
       }.`,
     });
-    console.log(profile, "------------t");
 
     // Decrement credits for free users
     if (

@@ -116,7 +116,6 @@ export class VideoExportManager {
 
     for (const mimeType of codecList) {
       if (MediaRecorder.isTypeSupported(mimeType)) {
-        console.log("Using codec:", mimeType);
         return mimeType;
       }
     }
@@ -568,9 +567,7 @@ export class VideoExportManager {
             return;
           }
 
-          console.log(
-            `Video exported successfully: ${blob.size} bytes, type: ${blob.type}`
-          );
+       
           resolve(blob);
         } catch (error) {
           reject(

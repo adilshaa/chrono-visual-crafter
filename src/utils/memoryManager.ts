@@ -179,8 +179,6 @@ export class MemoryManager {
         // Force garbage collection if available (Chrome with --enable-precise-memory-info)
         (window as any).gc();
       }
-
-      console.log("Memory cleanup completed");
     } catch (error) {
       console.warn("Memory cleanup failed:", error);
     } finally {

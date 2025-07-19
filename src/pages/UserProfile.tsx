@@ -75,7 +75,6 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
 
         // Type guard to ensure userSubscription is not null and has the expected properties
         if (!userSubscription) {
-          console.log("No subscription found for user");
           setIsLoading(false);
           return;
         }

@@ -272,7 +272,7 @@ const StudioContent = () => {
 
   const handleStartRecording = () => {
     if (isRecording) return;
-    console.log("Starting recording...");
+
     setRecordingTime(0);
     recordedChunks.current = [];
     setVideoBlob(null);
@@ -330,7 +330,7 @@ const StudioContent = () => {
 
   const handleStopRecording = () => {
     if (!isRecording) return;
-    console.log("Stopping recording...");
+
     setIsRecording(false);
     if (mediaRecorder.current) {
       mediaRecorder.current.stop();

@@ -255,7 +255,6 @@ export const PricingCard = ({
       return;
     }
 
-    console.log("Opening checkout with price ID:", paddlePriceId);
     openCheckout(paddlePriceId, {
       planName: planName,
       planPrice: price,

@@ -190,9 +190,7 @@ serve(async (req) => {
 
     // Idempotency check
     if (eventId && isEventProcessed(eventId)) {
-      console.log(
-        `[WEBHOOK INFO] Event ${eventId} already processed, skipping`
-      );
+     
       return new Response(
         JSON.stringify({ received: true, message: "Event already processed" }),
         {
@@ -203,9 +201,7 @@ serve(async (req) => {
     }
 
     // It's good practice to log after verification, to avoid logging unverified payloads
-    console.log("[WEBHOOK INFO] Paddle webhook received and verified", {
-      eventType: payload.event_type,
-    });
+
 
     // Validate event type
     const validEventTypes = [
@@ -273,9 +269,7 @@ serve(async (req) => {
         result = await handlePaymentMethodSaved(supabaseClient, payload);
         break;
       default:
-        console.log(
-          `[WEBHOOK INFO] Received event_type: ${payload.event_type} - No specific handler needed`
-        );
+       
         // Acknowledge receipt to Paddle, but log that it wasn't specifically handled.
         result = {
           success: true,
@@ -347,10 +341,7 @@ async function updateSubscriptionRecord(
       subscriptionData.current_billing_period.ends_at;
   }
 
-  console.log(
-    `[WEBHOOK INFO] Updating subscription record for user ${userId}:`,
-    updateData
-  );
+ 
 
   const { error: subscriptionUpdateError } = await supabaseClient
     .from("user_subscriptions")
@@ -366,9 +357,7 @@ async function updateSubscriptionRecord(
     );
   }
 
-  console.log(
-    `[WEBHOOK INFO] Successfully updated subscription record for user ${userId}`
-  );
+ 
 }
 
 async function handleSubscriptionEvent(
@@ -381,12 +370,8 @@ async function handleSubscriptionEvent(
   const customData = subscription.custom_data || {};
   const userId = customData.userId;
 
-  console.log("=== SUBSCRIPTION EVENT DEBUG START ===");
-  console.log("[WEBHOOK INFO] Processing subscription event", {
-    eventId,
-    eventType,
-    userId,
-  });
+  
+
   console.debug("[WEBHOOK DEBUG] Subscription custom_data", customData);
   console.debug(
     "[WEBHOOK DEBUG] Subscription items from payload",
@@ -419,9 +404,7 @@ async function handleSubscriptionEvent(
     };
   }
 
-  console.log(
-    `[WEBHOOK INFO] Attempting to find plan with paddle_price_id: '${priceId}'`
-  );
+
   let { data: plan, error: planError } = await supabaseClient
     .from("subscription_plans")
     .select("*")
@@ -455,9 +438,7 @@ async function handleSubscriptionEvent(
       };
     }
 
-    console.log(
-      `[WEBHOOK INFO] Attempting to find plan with paddle_product_id: '${productId}'`
-    );
+    
     const { data: planByProduct, error: productError } = await supabaseClient
       .from("subscription_plans")
       .select("*")
@@ -486,11 +467,11 @@ async function handleSubscriptionEvent(
     };
   }
 
-  console.log("[WEBHOOK INFO] Plan found:", JSON.stringify(plan, null, 2));
-  console.log("=== SUBSCRIPTION EVENT DEBUG END ===");
+  
+  
 
   // Check if profile exists, create if it doesn't
-  console.log("[WEBHOOK INFO] Checking if profile exists for user:", userId);
+  
   const { data: existingProfile, error: profileFetchError } =
     await supabaseClient
       .from("profiles")
@@ -500,10 +481,7 @@ async function handleSubscriptionEvent(
 
   if (profileFetchError && profileFetchError.code === "PGRST116") {
     // Profile doesn't exist, create it
-    console.log(
-      "[WEBHOOK INFO] Profile doesn't exist, creating new profile for user:",
-      userId
-    );
+   
     const { data: newProfile, error: profileCreateError } = await supabaseClient
       .from("profiles")
       .insert({
@@ -526,10 +504,7 @@ async function handleSubscriptionEvent(
       throw new Error(`Database error creating profile for user ${userId}.`);
     }
 
-    console.log(
-      "[WEBHOOK INFO] Profile created successfully:",
-      JSON.stringify(newProfile, null, 2)
-    );
+   
   } else if (profileFetchError) {
     console.error(
       `[WEBHOOK ERROR] DB_ERROR: Error fetching profile for user ${userId}. Event ID: ${eventId}. Error:`,
@@ -537,10 +512,7 @@ async function handleSubscriptionEvent(
     );
     throw new Error(`Database error fetching profile for user ${userId}.`);
   } else {
-    console.log(
-      "[WEBHOOK INFO] Profile exists:",
-      JSON.stringify(existingProfile, null, 2)
-    );
+   
   }
 
   // Update user profile
@@ -554,11 +526,8 @@ async function handleSubscriptionEvent(
   if (subscription.status === "canceled") {
     profileUpdateData.subscription_plan = "free";
   }
-  console.log(
-    "[WEBHOOK INFO] Updating profile with data:",
-    JSON.stringify(profileUpdateData, null, 2)
-  );
-  console.log("[WEBHOOK INFO] For user ID:", userId);
+ 
+  
 
   const { data: updatedProfile, error: profileUpdateError } =
     await supabaseClient
@@ -576,10 +545,6 @@ async function handleSubscriptionEvent(
     throw new Error(`Database error updating profile for user ${userId}.`); // Caught by main try-catch, results in 500
   }
 
-  console.log(
-    "[WEBHOOK INFO] Profile updated successfully:",
-    JSON.stringify(updatedProfile, null, 2)
-  );
 
   // Create or update subscription record
   // Normalize status to ensure consistent spelling
@@ -589,19 +554,10 @@ async function handleSubscriptionEvent(
     normalizedStatus = "cancelled";
   }
 
-  console.log(
-    `Normalizing status from "${subscription.status}" to "${normalizedStatus}" for upsert`
-  );
+  
 
   // Upsert user subscription record directly
-  console.log("[WEBHOOK INFO] Upserting subscription record with data:", {
-    user_id: userId,
-    plan_id: plan.id,
-    paddle_subscription_id: subscription.id,
-    status: normalizedStatus,
-    current_period_start: subscription.current_billing_period?.starts_at,
-    current_period_end: subscription.current_billing_period?.ends_at,
-  });
+ 
 
   const { data: upsertedSubscription, error: subscriptionUpsertError } =
     await supabaseClient
@@ -633,10 +589,6 @@ async function handleSubscriptionEvent(
     );
   }
 
-  console.log(
-    "[WEBHOOK INFO] Subscription upserted successfully:",
-    JSON.stringify(upsertedSubscription, null, 2)
-  );
 
   // Log payment history for audit trail
   const { error: historyError } = await supabaseClient
@@ -661,14 +613,10 @@ async function handleSubscriptionEvent(
     );
     // Don't throw error for history logging, just log it
   } else {
-    console.log(
-      `[WEBHOOK INFO] Payment history logged successfully for user ${userId}`
-    );
+   
   }
 
-  console.log(
-    `[WEBHOOK INFO] EVENT_PROCESSED: Subscription event for user: ${userId}, plan: ${plan.name}, status: ${subscription.status}. Event ID: ${eventId}`
-  );
+ 
 
   // Handle cancellation-specific logic
   if (eventType === "subscription.cancelled") {
@@ -708,17 +656,10 @@ async function handleTransactionCompleted(
   const customData = transaction.custom_data || {};
   const userId = customData.userId;
 
-  console.log("=== TRANSACTION COMPLETED DEBUG START ===");
-  console.log("[WEBHOOK INFO] Event ID:", eventId);
-  console.log("[WEBHOOK INFO] User ID from custom_data:", userId);
-  console.log(
-    "[WEBHOOK INFO] Transaction custom_data:",
-    JSON.stringify(customData, null, 2)
-  );
-  console.log(
-    "[WEBHOOK INFO] Transaction items:",
-    JSON.stringify(transaction.items, null, 2)
-  );
+  
+  
+  
+  
 
   if (!userId) {
     const errorMessage = `EVENT_PROCESSING_FAILURE: No userId found in transaction custom_data. Event ID: ${eventId}.`;
@@ -732,7 +673,7 @@ async function handleTransactionCompleted(
   }
 
   // Create profile if it doesn't exist
-  console.log("[WEBHOOK INFO] Checking if profile exists for user:", userId);
+  
   const { data: existingProfile, error: profileFetchError } =
     await supabaseClient
       .from("profiles")
@@ -742,10 +683,7 @@ async function handleTransactionCompleted(
 
   if (profileFetchError && profileFetchError.code === "PGRST116") {
     // Profile doesn't exist, create it
-    console.log(
-      "[WEBHOOK INFO] Profile doesn't exist, creating new profile for user:",
-      userId
-    );
+  
     const { data: newProfile, error: profileCreateError } = await supabaseClient
       .from("profiles")
       .insert({
@@ -768,10 +706,7 @@ async function handleTransactionCompleted(
       throw new Error(`Database error creating profile for user ${userId}.`);
     }
 
-    console.log(
-      "[WEBHOOK INFO] Profile created successfully:",
-      JSON.stringify(newProfile, null, 2)
-    );
+   
   } else if (profileFetchError) {
     console.error(
       `[WEBHOOK ERROR] DB_ERROR: Error fetching profile for user ${userId}. Event ID: ${eventId}. Error:`,
@@ -779,10 +714,7 @@ async function handleTransactionCompleted(
     );
     throw new Error(`Database error fetching profile for user ${userId}.`);
   } else {
-    console.log(
-      "[WEBHOOK INFO] Profile exists:",
-      JSON.stringify(existingProfile, null, 2)
-    );
+  
   }
 
   if (
@@ -794,9 +726,7 @@ async function handleTransactionCompleted(
     const priceId = item.price?.id || item.price_id;
 
     if (!priceId) {
-      console.warn(
-        `[WEBHOOK WARN] No price_id found in transaction item. Event ID: ${eventId}. Cannot update profile based on this item.`
-      );
+    
       return {
         success: true,
         message:
@@ -804,9 +734,7 @@ async function handleTransactionCompleted(
       };
     }
 
-    console.log(
-      `[WEBHOOK INFO] Attempting to find plan with paddle_price_id: '${priceId}' from transaction`
-    );
+   
     let { data: plan, error: planError } = await supabaseClient
       .from("subscription_plans")
       .select("*")
@@ -839,9 +767,7 @@ async function handleTransactionCompleted(
         };
       }
 
-      console.log(
-        `[WEBHOOK INFO] Attempting to find plan with paddle_product_id: '${productId}' from transaction`
-      );
+  
       const { data: planByProduct, error: productError } = await supabaseClient
         .from("subscription_plans")
         .select("*")
@@ -861,10 +787,7 @@ async function handleTransactionCompleted(
     }
 
     if (plan) {
-      console.log(
-        "[WEBHOOK INFO] Plan found for transaction item:",
-        JSON.stringify(plan, null, 2)
-      );
+     
       const { error: profileUpdateError } = await supabaseClient
         .from("profiles")
         .update({
@@ -884,9 +807,7 @@ async function handleTransactionCompleted(
           `Database error updating profile for transaction for user ${userId}.`
         ); // Caught, results in 500
       }
-      console.log(
-        `[WEBHOOK INFO] EVENT_PROCESSED: Profile updated for user ${userId} from one-time transaction, plan: ${plan.name}. Event ID: ${eventId}`
-      );
+     
     } else {
       const finalId = item.price?.product_id || priceId;
       console.warn(
@@ -894,11 +815,9 @@ async function handleTransactionCompleted(
       );
     }
   } else {
-    console.log(
-      `[WEBHOOK INFO] EVENT_PROCESSING_INFO: Transaction for user ${userId} (Event ID: ${eventId}) is related to a subscription or has no items to process for profile update.`
-    );
+ 
   }
-  console.log("=== TRANSACTION COMPLETED DEBUG END ===");
+  
   return { success: true, message: "Transaction completed event processed." };
 }
 
@@ -911,13 +830,7 @@ async function handleSubscriptionCanceled(
   const customData = subscription.custom_data || {};
   const userId = customData.userId;
 
-  console.log("=== SUBSCRIPTION STATUS CHANGE DEBUG START ===");
-  console.log("[WEBHOOK INFO] Processing subscription status change", {
-    eventId,
-    eventType: payload.event_type,
-    userId,
-    status: subscription.status,
-  });
+ 
 
   if (!userId) {
     const errorMessage = `EVENT_PROCESSING_FAILURE: No userId found in custom_data for subscription status change. Event ID: ${eventId}.`;
@@ -1000,9 +913,7 @@ async function handleSubscriptionCanceled(
     normalizedStatus = "cancelled";
   }
 
-  console.log(
-    `Normalizing status from "${subscription.status}" to "${normalizedStatus}"`
-  );
+  
 
   const { error: subscriptionUpdateError } = await supabaseClient
     .from("user_subscriptions")
@@ -1031,10 +942,7 @@ async function handleSubscriptionCanceled(
     ); // Caught, results in 500
   }
 
-  console.log(
-    `[WEBHOOK INFO] EVENT_PROCESSED: Subscription status change for user: ${userId}, status: ${subscriptionStatus}, plan: ${subscriptionPlan}. Event ID: ${eventId}`
-  );
-  console.log("=== SUBSCRIPTION STATUS CHANGE DEBUG END ===");
+  
   return {
     success: true,
     message: `Subscription ${payload.event_type} processed successfully.`,
@@ -1049,17 +957,8 @@ async function handlePaymentMethodDeleted(
   const eventId = payload.event_id || "N/A";
   const customerId = paymentMethod.customer_id;
 
-  console.log("=== PAYMENT METHOD DELETED DEBUG START ===");
-  console.log("[WEBHOOK INFO] Processing payment method deletion", {
-    eventId,
-    customerId,
-  });
-  console.debug("[WEBHOOK DEBUG] Payment method data", paymentMethod);
-
-  // Log the event for audit purposes
-  console.log(
-    `[WEBHOOK INFO] Payment method ${paymentMethod.id} deleted for customer ${customerId}. Event ID: ${eventId}`
-  );
+  
+  
 
   // If you store payment methods in your database, you might want to update or remove them
   // For example:
@@ -1078,7 +977,7 @@ async function handlePaymentMethodDeleted(
   }
   */
 
-  console.log("=== PAYMENT METHOD DELETED DEBUG END ===");
+  
   return {
     success: true,
     message: "Payment method deletion acknowledged.",
@@ -1093,18 +992,7 @@ async function handlePaymentMethodSaved(
   const eventId = payload.event_id || "N/A";
   const customerId = paymentMethod.customer_id;
 
-  console.log("=== PAYMENT METHOD SAVED DEBUG START ===");
-  console.log("[WEBHOOK INFO] Processing payment method saved", {
-    eventId,
-    customerId,
-    paymentMethodId: paymentMethod.id,
-  });
-  console.debug("[WEBHOOK DEBUG] Payment method data", paymentMethod);
-
-  // Log the event for audit purposes
-  console.log(
-    `[WEBHOOK INFO] Payment method ${paymentMethod.id} saved for customer ${customerId}. Event ID: ${eventId}`
-  );
+  
 
   // If you store payment methods in your database, you might want to save or update them
   // For example:
@@ -1126,7 +1014,7 @@ async function handlePaymentMethodSaved(
   }
   */
 
-  console.log("=== PAYMENT METHOD SAVED DEBUG END ===");
+  
   return {
     success: true,
     message: "Payment method saved acknowledged.",
@@ -1139,14 +1027,6 @@ async function handleCustomerEvent(
 ): Promise<HandlerResult> {
   const customer = payload.data;
   const eventId = payload.event_id || "N/A";
-
-  console.log("=== CUSTOMER EVENT DEBUG START ===");
-  console.log("[WEBHOOK INFO] Processing customer event", {
-    eventId,
-    eventType: payload.event_type,
-    customerId: customer.id,
-  });
-  console.debug("[WEBHOOK DEBUG] Customer data", customer);
 
   // You might want to update customer information in your profiles table
   if (customer.custom_data?.userId) {
@@ -1164,13 +1044,11 @@ async function handleCustomerEvent(
       );
       // Don't throw error for customer events, just log
     } else {
-      console.log(
-        `[WEBHOOK INFO] Updated profile for user ${customer.custom_data.userId} with customer ID ${customer.id}`
-      );
+     
     }
   }
 
-  console.log("=== CUSTOMER EVENT DEBUG END ===");
+  
   return {
     success: true,
     message: `Customer ${payload.event_type} processed successfully.`,
@@ -1186,15 +1064,7 @@ async function handleInvoiceEvent(
   const customData = invoice.custom_data || {};
   const userId = customData.userId;
 
-  console.log("=== INVOICE EVENT DEBUG START ===");
-  console.log("[WEBHOOK INFO] Processing invoice event", {
-    eventId,
-    eventType: payload.event_type,
-    userId,
-    invoiceId: invoice.id,
-  });
-  console.debug("[WEBHOOK DEBUG] Invoice data", invoice);
-
+  
   // Handle failed payments by updating subscription status
   if (payload.event_type === "invoice.payment_failed" && userId) {
     const { error: updateError } = await supabaseClient
@@ -1210,13 +1080,11 @@ async function handleInvoiceEvent(
         `[WEBHOOK ERROR] Error updating subscription status for failed payment: ${updateError.message}`
       );
     } else {
-      console.log(
-        `[WEBHOOK INFO] Updated subscription status to 'past_due' for user ${userId} due to failed payment`
-      );
+     
     }
   }
 
-  console.log("=== INVOICE EVENT DEBUG END ===");
+  
   return {
     success: true,
     message: `Invoice ${payload.event_type} processed successfully.`,
@@ -1232,12 +1100,7 @@ async function handleSubscriptionPaymentEvent(
   const customData = subscription.custom_data || {};
   const userId = customData.userId;
 
-  console.log("=== SUBSCRIPTION PAYMENT EVENT DEBUG START ===");
-  console.log("[WEBHOOK INFO] Processing subscription payment event", {
-    eventId,
-    eventType: payload.event_type,
-    userId,
-  });
+  
   console.debug("[WEBHOOK DEBUG] Subscription payment data", subscription);
 
   if (!userId) {
@@ -1266,9 +1129,7 @@ async function handleSubscriptionPaymentEvent(
         `[WEBHOOK ERROR] Error updating profile status for failed payment: ${profileUpdateError.message}`
       );
     } else {
-      console.log(
-        `[WEBHOOK INFO] Updated profile status to 'past_due' for user ${userId} due to failed payment`
-      );
+     
     }
 
     // Update subscription record status
@@ -1374,7 +1235,7 @@ async function handleSubscriptionPaymentEvent(
     }
   }
 
-  console.log("=== SUBSCRIPTION PAYMENT EVENT DEBUG END ===");
+  
   return {
     success: true,
     message: `Subscription payment ${payload.event_type} processed successfully.`,

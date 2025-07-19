@@ -76,9 +76,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
             }, 1000);
           }
 
-          logger.info("Paddle initialized successfully", {
-            environment: import.meta.env.VITE_PADDLE_ENVIRONMENT || "sandbox",
-          });
+        
         } else {
           throw new Error("Failed to initialize Paddle instance");
         }
@@ -332,11 +330,6 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
     }
 
     try {
-      console.log("Canceling subscription via API", {
-        userId: user.id,
-        subscriptionId,
-      });
-
       if (!isLoaded || !paddle) {
         toast({
           title: "Payment System Not Ready",
@@ -357,16 +350,10 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
             subscriptionId: subscriptionId,
             effectiveFrom: "next_billing_period",
             eventCallback: async (data: any) => {
-              console.log("Paddle cancel event received", {
-                eventName: data.name,
-                data,
-              });
-
               if (
                 data.name === "subscription.cancel.completed" ||
                 data.name === "cancel.complete"
               ) {
-                console.log("Subscription cancellation completed");
                 toast({
                   title: "Subscription Canceled",
                   description:
@@ -426,13 +413,9 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
             subscriptionId: subscriptionId,
             effectiveFrom: "next_billing_period",
             eventCallback: async (data: any) => {
-              console.log("Paddle cancelPreview event received", {
-                eventName: data.name,
-                data,
-              });
+            
 
               if (data.name === "cancel.complete") {
-                console.log("Subscription cancellation completed");
                 toast({
                   title: "Subscription Canceled",
                   description:
@@ -504,9 +487,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
               errorMessage.includes("subscription is canceled") ||
               errorMessage.includes("already cancelled")
             ) {
-              console.log(
-                "Subscription was already cancelled, treating as success"
-              );
+             
               toast({
                 title: "Subscription Already Canceled",
                 description:
@@ -535,7 +516,6 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
             return false;
           }
 
-          console.log("Edge function cancellation successful");
           toast({
             title: "Subscription Canceled",
             description:
@@ -578,8 +558,6 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
   };
 
   const openCheckout = (priceId: string, customData?: any) => {
-    console.log("Opening Paddle checkout with:", { priceId, customData });
-
     // Enhanced error handling and validation
     if (!isLoaded || !paddle) {
       console.error("Paddle not loaded:", {
@@ -605,10 +583,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
       return;
     }
 
-    console.log("Proceeding with checkout, user:", {
-      userId: user.id,
-      email: user.primaryEmailAddress?.emailAddress,
-    });
+ 
 
     // Navigate to the inline checkout page instead of opening overlay
     const checkoutUrl = new URL("/checkout", window.location.origin);

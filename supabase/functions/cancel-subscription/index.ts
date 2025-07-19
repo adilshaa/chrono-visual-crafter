@@ -45,7 +45,6 @@ async function callPaddleAPI(endpoint: string, method = "GET", body?: any) {
   }
 
   const url = `${PADDLE_API_URL}${endpoint}`;
-  console.log(`Making ${method} request to: ${url}`);
 
   const options: RequestInit = {
     method,
@@ -122,7 +121,7 @@ async function cancelPendingChanges(subscriptionId: string) {
       `/subscriptions/${subscriptionId}/cancel-scheduled-changes`,
       "POST"
     );
-    console.log("Successfully canceled pending changes:", data);
+
     return data;
   } catch (error) {
     console.error("Error canceling pending changes:", error);
@@ -196,7 +195,7 @@ serve(async (req) => {
     );
 
     // Verify user has permission to cancel this subscription
-    console.log("Verifying subscription ownership for userId:", userId);
+
     const { data: subscription, error: subscriptionError } =
       await supabaseClient
         .from("user_subscriptions")
@@ -225,7 +224,6 @@ serve(async (req) => {
       subscription.status === "cancelled" ||
       subscription.status === "canceled"
     ) {
-      console.log("Subscription is already cancelled:", subscriptionId);
       return new Response(
         JSON.stringify({
           message: "Subscription is already cancelled",
@@ -239,9 +237,7 @@ serve(async (req) => {
     }
 
     // Check subscription status with Paddle API
-    console.log(
-      `Checking current subscription status with Paddle API: ${subscriptionId}`
-    );
+   
 
     if (!PADDLE_API_KEY) {
       console.error("PADDLE_API_KEY not configured");
@@ -259,17 +255,11 @@ serve(async (req) => {
 
     try {
       // Step 1: Get current subscription details from Paddle
-      const subscriptionDetails = await getSubscriptionDetails(subscriptionId);
-      console.log("Current subscription details:", {
-        status: subscriptionDetails.status,
-        hasPendingChanges: hasPendingChanges(subscriptionDetails),
-      });
+     
 
       // Step 2: Handle pending changes if they exist
       if (hasPendingChanges(subscriptionDetails)) {
-        console.log("Subscription has pending changes. Canceling them first.");
         await cancelPendingChanges(subscriptionId);
-        console.log("Pending changes canceled successfully.");
       }
 
       // Step 3: Now proceed with cancellation
@@ -298,9 +288,7 @@ serve(async (req) => {
               "cannot update subscription, as subscription is canceled"
             ))
         ) {
-          console.log(
-            "Subscription is already cancelled in Paddle, proceeding with database update"
-          );
+         
           paddleData = {
             status: "cancelled",
             message: "Subscription was already cancelled in Paddle",
@@ -316,7 +304,7 @@ serve(async (req) => {
       }
 
       // Update subscription in database using the new cancel function
-      console.log("Updating subscription status in database:", subscriptionId);
+
       const { error: updateError } = await supabaseClient.rpc(
         "cancel_user_subscription",
         {
@@ -342,10 +330,7 @@ serve(async (req) => {
         );
       }
 
-      console.log(
-        "Subscription canceled successfully in database for user:",
-        userId
-      );
+    
 
       // Log to audit table
       try {

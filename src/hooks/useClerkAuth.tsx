@@ -216,7 +216,6 @@ export const useClerkAuth = () => {
 
   const updateProfile = async (updates: any) => {
     if (!user) return { error: "No user" };
-    console.log(updates, "------u");
 
     try {
       const { data, error } = await supabase

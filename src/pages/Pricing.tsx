@@ -39,8 +39,6 @@ const Pricing = () => {
 
       if (error) throw error;
 
-      console.log("Raw plans data from database:", data);
-
       const filtered = data.filter((plan) =>
         ["Free", "Pro"].includes(plan.name)
       );
@@ -50,10 +48,7 @@ const Pricing = () => {
           ? plan.features
           : JSON.parse((plan.features as string) || "[]");
 
-        console.log(`Processing plan ${plan.name}:`, {
-          price_id: plan.paddle_price_id,
-          product_id: plan.paddle_product_id,
-        });
+       
 
         return {
           id: plan.id.toString(),
@@ -67,7 +62,6 @@ const Pricing = () => {
         };
       });
 
-      console.log("All formatted plans:", formattedPlans);
       setPlans(formattedPlans);
     } catch (error: any) {
       toast({

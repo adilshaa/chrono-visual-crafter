@@ -205,7 +205,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
                   <div className="flex flex-col items-center">
                     <Button
                       onClick={onDownloadVideo}
-                      disabled={isProcessingVideo }
+                      disabled={isProcessingVideo}
                       variant="ghost"
                       className="w-12 h-12 rounded-full text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 disabled:opacity-30 disabled:cursor-not-allowed border-0"
                       aria-label="Export video"
@@ -213,7 +213,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
                       {isProcessingVideo ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <Film className="w-5 h-5" />
+                        <Download className="w-5 h-5" />
                       )}
                     </Button>
                     {/* <span className="text-xs text-amber-400 mt-1 px-2 py-0.5 bg-amber-500/20 rounded-full">
@@ -242,7 +242,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 {!hasCredits && recordedChunksLength > 0
-                  ? "Upgrade to Export"
+                  ? "Download as video"
                   : "Export Video"}
               </TooltipContent>
             </Tooltip>
@@ -254,7 +254,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
                     <div className="flex flex-col items-center">
                       <Button
                         onClick={onTransparentExport}
-                        disabled={recordedChunksLength === 0 }
+                        disabled={recordedChunksLength === 0}
                         variant="ghost"
                         className="w-12 h-12 rounded-full text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 border-0"
                         aria-label="Export transparent overlay"
@@ -268,7 +268,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
                   ) : (
                     <Button
                       onClick={onTransparentExport}
-                      disabled={recordedChunksLength === 0 }
+                      disabled={recordedChunksLength === 0}
                       variant="ghost"
                       className="w-12 h-12 rounded-full text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 border-0"
                       aria-label="Export transparent overlay"
@@ -278,8 +278,8 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
                   )}
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  { recordedChunksLength > 0
-                    ? "Upgrade to Export"
+                  {recordedChunksLength > 0
+                    ? "Transparent Export"
                     : "Export Transparent Overlay"}
                 </TooltipContent>
               </Tooltip>

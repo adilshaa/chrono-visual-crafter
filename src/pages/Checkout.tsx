@@ -62,8 +62,6 @@ const CheckoutPage = () => {
           navigate("/studio");
           return;
         }
-
-        console.log("User subscription status:", profile?.subscription_status);
       } catch (error) {
         console.error("Error checking user subscription:", error);
       }
@@ -183,8 +181,6 @@ const CheckoutPage = () => {
           return;
         }
 
-        console.log("Initializing Paddle with environment:", environment);
-
         // Initialize Paddle with default inline checkout settings
         const paddleInstance = await initializePaddle({
           environment:
@@ -197,9 +193,7 @@ const CheckoutPage = () => {
         if (paddleInstance) {
           setPaddle(paddleInstance);
           setIsLoaded(true);
-          console.log(
-            "Paddle initialized successfully for checkout with inline settings"
-          );
+        
         } else {
           throw new Error("Failed to initialize Paddle instance");
         }
@@ -268,11 +262,7 @@ const CheckoutPage = () => {
     }
 
     const performCheckoutInit = () => {
-      console.log("Initializing inline checkout with:", {
-        priceId,
-        userId: user.id,
-        email: user.primaryEmailAddress?.emailAddress,
-      });
+    
 
       try {
         // Get current domain for success URL
@@ -302,8 +292,6 @@ const CheckoutPage = () => {
             planName: productInfo.name,
           },
           eventCallback: (data: any) => {
-            console.log("Paddle checkout event:", data.name, data);
-
             // Security: Validate event data
             if (!data || typeof data.name !== "string") {
               console.warn("Invalid event data received from Paddle");
@@ -313,11 +301,10 @@ const CheckoutPage = () => {
             switch (data.name) {
               case "checkout.loaded":
                 setIsCheckoutLoaded(true);
-                console.log("Checkout loaded successfully");
+
                 break;
 
               case "checkout.completed":
-                console.log("Payment completed successfully");
                 toast({
                   title: "Payment Successful!",
                   description:
@@ -331,7 +318,6 @@ const CheckoutPage = () => {
                 break;
 
               case "checkout.closed":
-                console.log("Checkout was closed by user");
                 break;
 
               case "checkout.error":
@@ -346,7 +332,6 @@ const CheckoutPage = () => {
                 break;
 
               default:
-                console.log("Unhandled checkout event:", data.name);
             }
           },
         };

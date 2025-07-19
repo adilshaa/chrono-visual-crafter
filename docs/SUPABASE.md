@@ -53,8 +53,6 @@ supabase db reset
 ```
 
 ### Database Migrations
-
-```bash
 # Create a new migration
 supabase migration new <migration_name>
 
@@ -72,8 +70,22 @@ supabase db reset
 
 # Check migration status
 supabase migration list
-```
 
+# Repair migrations that have diverged
+supabase migration repair
+
+# Verify database schema integrity
+supabase db lint
+
+# Create a database backup
+supabase db dump -f backup.sql
+
+# Restore from a database backup
+supabase db restore -f backup.sql
+
+# Show executed migrations
+supabase migration list --status executed
+```
 ### Type Generation
 
 ```bash

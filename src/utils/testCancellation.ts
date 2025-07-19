@@ -9,8 +9,6 @@ export async function testCancellationAPI(
   subscriptionId: string,
   userId: string
 ) {
-  console.log("🧪 Testing subscription cancellation API...");
-
   try {
     const { data, error } = await supabase.functions.invoke(
       "cancel-subscription",
@@ -29,7 +27,6 @@ export async function testCancellationAPI(
       return { success: false, error };
     }
 
-    console.log("✅ Cancellation API Response:", data);
     return { success: true, data };
   } catch (exception) {
     console.error("❌ Cancellation API Exception:", exception);
@@ -38,8 +35,6 @@ export async function testCancellationAPI(
 }
 
 export async function testCORSConfiguration() {
-  console.log("🧪 Testing CORS configuration...");
-
   const testOrigins = [
     "http://localhost:8080",
     "http://localhost:8081",
@@ -63,9 +58,7 @@ export async function testCORSConfiguration() {
       const allowedOrigin = response.headers.get("Access-Control-Allow-Origin");
 
       if (allowedOrigin === origin) {
-        console.log(`✅ CORS OK for ${origin}`);
       } else {
-        console.log(`❌ CORS Failed for ${origin}. Got: ${allowedOrigin}`);
       }
     } catch (error) {
       console.error(`❌ CORS Test Error for ${origin}:`, error);
@@ -79,8 +72,4 @@ if (process.env.NODE_ENV === "development") {
   window.testCancellation = testCancellationAPI;
   // @ts-ignore
   window.testCORS = testCORSConfiguration;
-
-  console.log("🔧 Development helpers available:");
-  console.log("- window.testCancellation(subscriptionId, userId)");
-  console.log("- window.testCORS()");
 }

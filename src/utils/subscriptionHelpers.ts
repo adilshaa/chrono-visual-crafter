@@ -12,13 +12,10 @@ export function reloadPageAfterSubscriptionChange(
   message?: string
 ): void {
   if (message) {
-    console.log(message);
   }
 
   setTimeout(() => {
-    console.log(
-      "Reloading page to update subscription status across all components"
-    );
+  
     window.location.reload();
   }, delay);
 }
@@ -33,7 +30,6 @@ export function navigateAfterSubscriptionChange(
   delay: number = 1500
 ): void {
   setTimeout(() => {
-    console.log(`Navigating to ${url} after subscription change`);
     window.location.href = url;
   }, delay);
 }

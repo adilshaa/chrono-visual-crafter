@@ -1,35 +1,34 @@
 export class PaddleDebugger {
   static logPaddleState() {
-    console.group('🏓 Paddle SDK Debug Information');
     
     // Check if Paddle is loaded
-    console.log('Paddle loaded:', typeof window.Paddle !== 'undefined');
+    
     
     if (typeof window.Paddle !== 'undefined') {
-      console.log('Paddle object:', window.Paddle);
+      
       
       // Check Paddle environment
       if (window.Paddle.Environment) {
-        console.log('Paddle environment:', window.Paddle.Environment.get?.());
+        
       }
       
       // Check Subscription methods
       if (window.Paddle.Subscription) {
-        console.log('Subscription object:', window.Paddle.Subscription);
-        console.log('Available methods:', Object.getOwnPropertyNames(window.Paddle.Subscription));
+        
+        
         
         // Check specific cancellation methods
-        console.log('cancel method available:', typeof window.Paddle.Subscription.cancel === 'function');
-        console.log('cancelPreview method available:', typeof window.Paddle.Subscription.cancelPreview === 'function');
-        console.log('update method available:', typeof window.Paddle.Subscription.update === 'function');
+        
+        
+        
       } else {
         console.warn('Paddle.Subscription not available');
       }
       
       // Check Checkout methods
       if (window.Paddle.Checkout) {
-        console.log('Checkout object available:', true);
-        console.log('Checkout methods:', Object.getOwnPropertyNames(window.Paddle.Checkout));
+        
+        
       } else {
         console.warn('Paddle.Checkout not available');
       }
@@ -49,7 +48,7 @@ export class PaddleDebugger {
 
       // Test basic Paddle functionality
       const environment = window.Paddle.Environment?.get?.();
-      console.log('Paddle environment test:', environment);
+      
 
       return true;
     } catch (error) {
@@ -86,7 +85,7 @@ export class PaddleDebugger {
       
       const checkPaddle = () => {
         if (window.Paddle && window.Paddle.Subscription) {
-          console.log('Paddle SDK loaded successfully');
+          
           resolve(true);
           return;
         }

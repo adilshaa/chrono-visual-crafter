@@ -59,24 +59,20 @@ export const BillingTab: React.FC<BillingTabProps> = ({
     return new Date(dateString).toLocaleDateString();
   };
 
-const navigate = useNavigate();
-const handelOnNavigate = (path: string) => {
-  navigate(path);
-};
+  const navigate = useNavigate();
+  const handelOnNavigate = (path: string) => {
+    navigate(path);
+  };
   // Fetch payment history from the payment_history table
   useEffect(() => {
     const fetchPaymentHistory = async () => {
       if (!userId) {
-        console.log("No userId provided");
         return;
       }
 
-      console.log("Fetching payment history for userId:", userId);
       setIsLoadingHistory(true);
 
       try {
-        console.log("Fetching payment history for Clerk userId:", userId);
-
         // Since we're using Clerk auth, we need to filter by user_id directly
         // We'll need to temporarily disable RLS or create a more permissive policy
         const { data: payment_history, error } = await supabase
@@ -86,12 +82,7 @@ const handelOnNavigate = (path: string) => {
           .order("created_at", { ascending: false })
           .limit(10);
 
-        console.log("Payment history query result:", {
-          payment_history,
-          error,
-          userId,
-          queryLength: payment_history?.length,
-        });
+      
 
         if (error) {
           console.error("Error fetching payment history:", error);
@@ -115,7 +106,6 @@ const handelOnNavigate = (path: string) => {
             });
           }
         } else {
-          console.log("Setting payment history:", payment_history);
           setPaymentHistory(payment_history || []);
         }
       } catch (error) {
@@ -182,8 +172,6 @@ const handelOnNavigate = (path: string) => {
       }
 
       if (data.success) {
-        console.log(data, "customer urls");
-
         // Redirect to customer portal
         window.open(
           data.portal_url[0].update_subscription_payment_method,

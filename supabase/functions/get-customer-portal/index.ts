@@ -45,7 +45,6 @@ async function callPaddleAPI(endpoint: string, method = "GET", body?: any) {
   }
 
   const url = `${PADDLE_API_URL}${endpoint}`;
-  console.log(`Making ${method} request to: ${url}`);
 
   const options: RequestInit = {
     method,
@@ -163,12 +162,7 @@ serve(async (req) => {
     }
 
     // Verify the user has permission to access this subscription
-    console.log(
-      "Verifying subscription for userId:",
-      userId,
-      "subscriptionId:",
-      subscriptionId
-    );
+   
 
     // Use a more efficient query that checks both fields in one go with minimal data selection
     const { data: userSubscription, error: subscriptionError } =
@@ -211,7 +205,6 @@ serve(async (req) => {
     }
 
     // Create customer portal session with Paddle API using the helper function
-    console.log("Creating customer portal session for customer:", customerId);
 
     try {
       const { data: paddleData } = await callPaddleAPI(
@@ -226,7 +219,7 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           portal_url: paddleData?.data?.urls?.subscriptions,
-          alldata:paddleData
+          alldata:paddleData,
         }),
         {
           status: 200,

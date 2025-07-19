@@ -978,10 +978,7 @@ const CounterPreview = forwardRef<HTMLCanvasElement, CounterPreviewProps>(
         // Auto-optimize if performance is poor
         if (currentFPSRef.current < 45 && !performanceOptimizedRef.current) {
           performanceOptimizedRef.current = true;
-          console.log(
-            "Performance optimization enabled due to low FPS:",
-            currentFPSRef.current
-          );
+         
         }
       }
     };

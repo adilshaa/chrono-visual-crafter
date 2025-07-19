@@ -329,7 +329,6 @@ export class UserGuidanceSystem {
    */
   private suggestSimpleTransition(): void {
     // This would be implemented to suggest and apply a simple transition
-    console.log("Suggesting simple transition for better performance");
   }
 
   /**
@@ -337,7 +336,6 @@ export class UserGuidanceSystem {
    */
   private applyPerformanceOptimizations(): void {
     // This would be implemented to apply automatic optimizations
-    console.log("Applying performance optimizations");
   }
 
   /**
@@ -345,7 +343,6 @@ export class UserGuidanceSystem {
    */
   private reduceEffectComplexity(): void {
     // This would be implemented to reduce particle counts and effect complexity
-    console.log("Reducing effect complexity");
   }
 
   /**
