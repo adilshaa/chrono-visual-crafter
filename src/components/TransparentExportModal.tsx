@@ -673,7 +673,7 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
         </Tabs>
 
         <div className="flex gap-3 pt-4 border-t border-white/[0.08]">
-          <Button
+          {/* <Button
             variant="outline"
             onClick={() => {
               if (isExporting && !isCancelRequested) {
@@ -701,7 +701,7 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
             ) : (
               "Cancel"
             )}
-          </Button>
+          </Button> */}
           <Button
             onClick={handleExport}
             disabled={

@@ -35,7 +35,6 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <PaddleProvider>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 {/* <Route path="/auth" element={<Auth />} /> */}
@@ -63,7 +62,6 @@ const App = () => {
                 /> */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </PaddleProvider>
           </TooltipProvider>
         </ClerkAuthWrapper>
       </BrowserRouter>
