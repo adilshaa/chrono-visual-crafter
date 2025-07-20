@@ -47,12 +47,10 @@ const Hero2 = () => {
           }`}
         >
           <div className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-              <span className="font-bold">⚡</span>
+            <div className="flex h-10 w-10 items-center justify-center ">
+              <img src="/favicon.ico" className="font-bold" />
             </div>
-            <span className="ml-2 text-xl font-bold text-white">
-              Chrono Visual
-            </span>
+            <span className="ml-2 text-xl font-bold text-white">Countflow</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -95,11 +93,11 @@ const Hero2 = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-                    <span className="font-bold">⚡</span>
+                  <div className="flex h-10 w-10 items-center justify-center ">
+                    <img src="/favicon.ico" className="font-bold" />
                   </div>
                   <span className="ml-2 text-xl font-bold text-white">
-                    Chrono Visual
+                    Countflow
                   </span>
                 </div>
                 <button onClick={() => setMobileMenuOpen(false)}>
@@ -112,7 +110,7 @@ const Hero2 = () => {
                 <MobileNavItem label="Pricing" href="/pricing" />
                 <MobileNavItem label="Studio" href="/studio" />
                 <div className="pt-4 flex items-center justify-between">
-                  <ThemeToggle />
+                  {/* <ThemeToggle /> */}
                 </div>
                 <button
                   onClick={handleGetStarted}

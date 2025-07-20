@@ -24,6 +24,8 @@ import FontSettings from "@/components/FontSettings";
 import StyleSettings from "@/components/StyleSettings";
 import DesignPreview from "@/components/DesignPreview";
 import { PerformanceIndicator } from "@/components/PerformanceIndicator";
+import ReferralModal from "@/components/ReferralModal";
+import { Button } from "@/components/ui/button";
 import type { MobileLayoutState } from "@/types/mobile";
 
 // @ts-ignore
@@ -143,6 +145,23 @@ const StudioContent = () => {
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [showTransparentExport, setShowTransparentExport] = useState(false);
   const [showExportQuality, setShowExportQuality] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+
+  // Listen for custom event from mobile header
+  useEffect(() => {
+    const handleOpenReferralModal = () => {
+      setShowReferralModal(true);
+    };
+
+    window.addEventListener("open-referral-modal", handleOpenReferralModal);
+
+    return () => {
+      window.removeEventListener(
+        "open-referral-modal",
+        handleOpenReferralModal
+      );
+    };
+  }, []);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -763,7 +782,15 @@ const StudioContent = () => {
 
             {/* Performance Indicator */}
 
-            <div className="flex items-center gap-2 ">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowReferralModal(true)}
+                className="text-sm text-gray-300 hover:text-white"
+              >
+                Refer & Earn
+              </Button>
               {user && <AuthButton mode="user" />}
             </div>
           </div>
@@ -1024,6 +1051,12 @@ const StudioContent = () => {
           recordedChunks.current.length > 0 || videoBlob !== null
         }
         isExporting={isProcessingVideo}
+      />
+
+      {/* Referral Modal */}
+      <ReferralModal
+        isOpen={showReferralModal}
+        onClose={() => setShowReferralModal(false)}
       />
     </div>
   );

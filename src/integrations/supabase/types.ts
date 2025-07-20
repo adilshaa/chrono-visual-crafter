@@ -36,6 +36,10 @@ export type Database = {
           subscription_status: string | null;
           updated_at: string;
           user_id: string;
+          ref_id: string | null;
+          ref_credits: number | null;
+          referred_by: string | null;
+          credits: number | null;
         };
         Insert: {
           avatar_url?: string | null;
@@ -48,6 +52,10 @@ export type Database = {
           subscription_status?: string | null;
           updated_at?: string;
           user_id: string;
+          ref_id?: string | null;
+          ref_credits?: number | null;
+          referred_by?: string | null;
+          credits?: number | null;
         };
         Update: {
           avatar_url?: string | null;
@@ -60,6 +68,10 @@ export type Database = {
           subscription_status?: string | null;
           updated_at?: string;
           user_id?: string;
+          ref_id?: string | null;
+          ref_credits?: number | null;
+          referred_by?: string | null;
+          credits?: number | null;
         };
         Relationships: [];
       };

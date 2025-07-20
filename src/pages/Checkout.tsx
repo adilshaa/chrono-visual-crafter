@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckoutPlanCard } from "@/components/ui/checkout-plan-card";
@@ -17,18 +17,96 @@ interface ProductInfo {
   billingCycle: string;
 }
 
+interface PaddleCheckoutData {
+  id: string;
+  transaction_id: string;
+  status: string;
+  custom_data: {
+    user_id: string;
+    email: string;
+    full_name: string;
+    timestamp: string;
+    plan_name: string;
+  };
+  currency_code: string;
+  customer: {
+    id: string;
+    email: string;
+    address: any;
+    business: any;
+  };
+  items: Array<{
+    price_id: string;
+    price_name: string;
+    product: {
+      id: string;
+      name: string;
+      description: string | null;
+      image_url: string;
+    };
+    billing_cycle: {
+      interval: string;
+      frequency: number;
+    };
+    trial_period: any;
+    quantity: number;
+    totals: {
+      subtotal: number;
+      tax: number;
+      total: number;
+      discount: number;
+      balance: number;
+      credit: number;
+    };
+    recurring_totals: {
+      subtotal: number;
+      tax: number;
+      discount: number;
+      total: number;
+    };
+  }>;
+  totals: {
+    subtotal: number;
+    tax: number;
+    total: number;
+    discount: number;
+    credit: number;
+    balance: number;
+  };
+  payment: {
+    method_details: {
+      type: string;
+    };
+  };
+  settings: {
+    display_mode: string;
+    theme: string;
+    variant: string;
+  };
+  recurring_totals: {
+    subtotal: number;
+    tax: number;
+    discount: number;
+    total: number;
+    balance: number;
+    credit: number;
+  };
+}
+
 const CheckoutPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, isSignedIn } = useUser();
   const { toast } = useToast();
   const checkoutRef = useRef<HTMLDivElement>(null);
-  const [isCheckoutLoaded, setIsCheckoutLoaded] = useState(false);
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [checkoutData, setCheckoutData] = useState<PaddleCheckoutData | null>(
+    null
+  );
 
   const priceId = searchParams.get("priceId");
   const planName = searchParams.get("plan") || "Premium Plan";
@@ -192,13 +270,28 @@ const CheckoutPage = () => {
               | "sandbox"
               | "production") || "sandbox",
           token: import.meta.env.VITE_PADDLE_CLIENT_TOKEN || "",
+          eventCallback: (ev) => {
+            console.log("Paddle event:", ev.name, ev);
+            if (ev.name === "checkout.completed") {
+              // call your backend with ev.data.checkout.id
+              fetch("/api/provision", {
+                method: "POST",
+                body: JSON.stringify(ev.data),
+              });
+            } else if (ev.name === "checkout.loaded") {
+              // Store the checkout data when loaded
+              setCheckoutData(ev.data as PaddleCheckoutData);
+              console.log("Checkout loaded data:", ev.data);
+            }
+          },
         });
 
         if (paddleInstance) {
           setPaddle(paddleInstance);
           setIsLoaded(true);
           console.log(
-            "Paddle initialized successfully for checkout with inline settings"
+            "Paddle initialized successfully for checkout with inline settings",
+            paddleInstance
           );
         } else {
           throw new Error("Failed to initialize Paddle instance");
@@ -267,7 +360,7 @@ const CheckoutPage = () => {
       return;
     }
 
-    const performCheckoutInit = () => {
+    const performCheckoutInit = async () => {
       console.log("Initializing inline checkout with:", {
         priceId,
         userId: user.id,
@@ -300,54 +393,6 @@ const CheckoutPage = () => {
             full_name: user.fullName || "Unknown User",
             timestamp: new Date().toISOString(),
             planName: productInfo.name,
-          },
-          eventCallback: (data: any) => {
-            console.log("Paddle checkout event:", data.name, data);
-
-            // Security: Validate event data
-            if (!data || typeof data.name !== "string") {
-              console.warn("Invalid event data received from Paddle");
-              return;
-            }
-
-            switch (data.name) {
-              case "checkout.loaded":
-                setIsCheckoutLoaded(true);
-                console.log("Checkout loaded successfully");
-                break;
-
-              case "checkout.completed":
-                console.log("Payment completed successfully");
-                toast({
-                  title: "Payment Successful!",
-                  description:
-                    "Your subscription has been activated. Redirecting to studio...",
-                });
-
-                // Force navigation to studio with success parameter
-                setTimeout(() => {
-                  window.location.href = "/studio?payment=success";
-                }, 1500);
-                break;
-
-              case "checkout.closed":
-                console.log("Checkout was closed by user");
-                break;
-
-              case "checkout.error":
-                console.error("Checkout error:", data);
-                toast({
-                  title: "Payment Error",
-                  description:
-                    data.error?.message ||
-                    "There was an issue processing your payment. Please try again.",
-                  variant: "destructive",
-                });
-                break;
-
-              default:
-                console.log("Unhandled checkout event:", data.name);
-            }
           },
         };
 
@@ -449,10 +494,12 @@ const CheckoutPage = () => {
         <div className="relative z-10 max-w-lg mx-auto px-8 py-12 h-full flex flex-col justify-center">
           {/* Company Logo and Name */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
-              <div className="w-8 h-8 bg-white rounded-lg"></div>
+            <div className=" mx-auto  rounded-xl flex items-center justify-center">
+              <div className="flex w-20 h-20 items-center justify-center ">
+                <img src="/favicon.ico" className="font-bold" />
+              </div>
             </div>
-            <h1 className="text-2xl font-bold text-white">Studio Counter</h1>
+            <h1 className="text-2xl font-bold text-white">Countflow</h1>
             <p className="text-white/60 text-sm">
               Professional Animation Tools
             </p>
@@ -466,6 +513,7 @@ const CheckoutPage = () => {
             features={productInfo.features}
             isPopular={productInfo.name === "Pro"}
             className="mb-6"
+            paddleData={checkoutData}
           />
 
           {/* Billing Summary */}
@@ -473,15 +521,33 @@ const CheckoutPage = () => {
             <div className="space-y-2 text-sm text-white/80">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${productInfo.price.toFixed(2)}</span>
+                <span>
+                  {checkoutData
+                    ? `${
+                        checkoutData.currency_code
+                      } ${checkoutData.totals.subtotal.toFixed(2)}`
+                    : `$${productInfo.price.toFixed(2)}`}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>Enter address to calculate</span>
+                <span>
+                  {checkoutData
+                    ? `${
+                        checkoutData.currency_code
+                      } ${checkoutData.totals.tax.toFixed(2)}`
+                    : "Enter address to calculate"}
+                </span>
               </div>
               <div className="flex justify-between font-medium text-white pt-2 border-t border-white/20">
                 <span>Total due today</span>
-                <span>${productInfo.price.toFixed(2)}</span>
+                <span>
+                  {checkoutData
+                    ? `${
+                        checkoutData.currency_code
+                      } ${checkoutData.totals.total.toFixed(2)}`
+                    : `$${productInfo.price.toFixed(2)}`}
+                </span>
               </div>
             </div>
           </div>

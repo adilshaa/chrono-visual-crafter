@@ -12,6 +12,7 @@ interface CheckoutPlanCardProps {
   features: string[];
   isPopular?: boolean;
   className?: string;
+  paddleData?: any;
 }
 
 export function CheckoutPlanCard({
@@ -21,6 +22,7 @@ export function CheckoutPlanCard({
   features,
   isPopular = false,
   className,
+  paddleData,
 }: CheckoutPlanCardProps) {
   return (
     <div
@@ -69,11 +71,32 @@ export function CheckoutPlanCard({
         <div className="text-center py-4">
           <div className="flex items-baseline justify-center gap-2 mb-2">
             <span className="text-4xl font-light text-white">
-              ${price.toFixed(2)}
+              {paddleData
+                ? `${
+                    paddleData.currency_code
+                  } ${paddleData.totals.subtotal.toFixed(2)}`
+                : `$${price.toFixed(2)}`}
             </span>
             <span className="text-white/70 text-sm">per month</span>
           </div>
-          {price > 0 && (
+          {paddleData && (
+            <div className="flex flex-col items-center justify-center gap-1 mt-2">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-white/80 text-sm">Tax:</span>
+                <span className="text-white text-sm font-medium">
+                  {paddleData.currency_code} {paddleData.totals.tax.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-white/80 text-sm">Total:</span>
+                <span className="text-white text-sm font-medium">
+                  {paddleData.currency_code}{" "}
+                  {paddleData.totals.total.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          )}
+          {!paddleData && price > 0 && (
             <div className="flex items-center justify-center gap-2">
               <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs font-medium">
                 Save 33%
@@ -81,7 +104,7 @@ export function CheckoutPlanCard({
               <span className="text-white/60 text-sm">with annual billing</span>
             </div>
           )}
-        </div>        
+        </div>
       </div>
     </div>
   );

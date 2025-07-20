@@ -69,10 +69,10 @@ export function Footer() {
       <div className="grid w-full gap-8 xl:grid-cols-3 xl:gap-8">
         <AnimatedContainer className="space-y-4">
           <div className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white mr-2 backdrop-blur-sm">
-              <Zap className="w-4 h-4" />
+            <div className="flex h-8 w-8 items-center justify-center ">
+              <img src="/favicon.ico" className="font-bold" />
             </div>
-            <span className="text-xl font-bold text-white">Chrono Visual</span>
+            <span className="ml-2 text-xl font-bold text-white">Countflow</span>
           </div>
           <p className="text-white/40 mt-8 text-sm md:mt-4">
             © {new Date().getFullYear()} Chrono Visual Crafter. All rights

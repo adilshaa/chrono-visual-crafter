@@ -2,6 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AuthButton from "@/components/auth/AuthButton";
 import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { Share2 } from "lucide-react";
 
 interface MobileHeaderProps {
   recordingTime: number;
@@ -75,6 +76,17 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Referral Button */}
+          <button
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-referral-modal"))
+            }
+            className="text-xs bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-2 py-1 rounded-md font-medium flex items-center gap-1"
+          >
+            <Share2 className="w-3 h-3" />
+            Refer
+          </button>
 
           {/* User Profile - Condensed */}
           {user && (
