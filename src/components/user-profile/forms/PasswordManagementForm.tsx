@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useUser, useAuth } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,26 +7,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-// Extend Window interface for Clerk
-declare global {
-  interface Window {
-    Clerk?: {
-      client: {
-        signIn: {
-          create: (params: {
-            strategy: string;
-            identifier: string;
-          }) => Promise<any>;
-        };
-      };
-    };
-  }
-}
+import { supabase } from "@/integrations/supabase/client";
 
 export const PasswordManagementForm: React.FC = () => {
-  const { user } = useUser();
-  const { signOut } = useAuth();
+  const { user, signOut } = useSupabaseAuth();
   const { toast } = useToast();
   const [isChanging, setIsChanging] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -95,10 +79,13 @@ export const PasswordManagementForm: React.FC = () => {
 
     setIsChanging(true);
     try {
-      await user.updatePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
       });
+
+      if (error) {
+        throw error;
+      }
 
       toast({
         title: "Password Changed",
@@ -117,8 +104,7 @@ export const PasswordManagementForm: React.FC = () => {
       toast({
         title: "Password Change Failed",
         description:
-          error.errors?.[0]?.message ||
-          "Failed to change password. Please try again.",
+          error.message || "Failed to change password. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -127,7 +113,7 @@ export const PasswordManagementForm: React.FC = () => {
   };
 
   const handleForgotPassword = async () => {
-    if (!user?.primaryEmailAddress?.emailAddress) {
+    if (!user?.email) {
       toast({
         title: "No Email Found",
         description: "No email address found for password reset.",
@@ -138,32 +124,31 @@ export const PasswordManagementForm: React.FC = () => {
 
     setIsResetting(true);
 
-    // For password reset, the best approach is to sign out and redirect to login
-    // This is because Clerk's password reset is designed to work from the sign-in flow
-    toast({
-      title: "Redirecting to Password Reset",
-      description:
-        "You will be signed out and redirected to the login page where you can reset your password.",
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
 
-    // Sign out the user and redirect to auth page
-    setTimeout(async () => {
-      try {
-        await signOut();
-        // Redirect to auth page with a hint to use forgot password
-        window.location.href = "/auth?reset=true";
-      } catch (error) {
-        console.error("Error during sign out:", error);
-        toast({
-          title: "Sign Out Failed",
-          description:
-            "Please manually sign out and use the 'Forgot Password' link on the login page.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsResetting(false);
+      if (error) {
+        throw error;
       }
-    }, 1500);
+
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your email for password reset instructions.",
+      });
+    } catch (error: any) {
+      console.error("Error sending password reset:", error);
+      toast({
+        title: "Password Reset Failed",
+        description:
+          error.message ||
+          "Failed to send password reset email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const passwordValidation = validatePassword(passwordData.newPassword);

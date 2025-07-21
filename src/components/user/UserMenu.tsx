@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/hooks/useTheme";
@@ -21,7 +21,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ className }: UserMenuProps) {
-  const { user, profile, signOut } = useClerkAuth();
+  const { user, profile, signOut } = useSupabaseAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -270,7 +270,6 @@ export function UserMenu({ className }: UserMenuProps) {
                   isLandingPage={isLandingPage}
                 />
 
-               
                 <div
                   className={cn(
                     "my-1 border-t",

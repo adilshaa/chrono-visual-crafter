@@ -1,5 +1,5 @@
 import React from "react";
-import { User } from "@clerk/nextjs";
+import { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,14 +138,16 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <div className="p-3 rounded-lg bg-[#181818] border border-white/[0.08]">
                 <label className="text-xs text-white/40">Full Name</label>
                 <p className="text-white mt-1">
-                  {user.fullName || "Not provided"}
+                  {profile?.full_name ||
+                    user.user_metadata?.full_name ||
+                    "Not provided"}
                 </p>
               </div>
 
               <div className="p-3 rounded-lg bg-[#181818] border border-white/[0.08]">
                 <label className="text-xs text-white/40">Email</label>
                 <p className="text-white mt-1 text-sm break-all">
-                  {user.primaryEmailAddress?.emailAddress}
+                  {profile?.email || user.email}
                 </p>
               </div>
 
@@ -153,7 +155,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 <label className="text-xs text-white/40">Member Since</label>
                 <p className="text-white mt-1 flex items-center">
                   <Calendar className="w-4 h-4 mr-2 text-white/40" />
-                  {new Date(user.createdAt).toLocaleDateString()}
+                  {new Date(user.created_at).toLocaleDateString()}
                 </p>
               </div>
 
@@ -232,7 +234,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   </Button>
                 )}
               </div>
-            </div>            
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,7 +50,7 @@ const PaddleProvider: React.FC<PaddleProviderProps> = ({
   const [subscription, setSubscription] = useState<SubscriptionState | null>(
     null
   );
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn } = useSupabaseAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 

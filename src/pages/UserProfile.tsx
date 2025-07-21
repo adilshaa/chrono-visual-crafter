@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +35,7 @@ interface SubscriptionDetails {
 const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
   const navigate = useNavigate();
   const { user, profile, signOut, updateProfile, refreshProfile } =
-    useClerkAuth();
+    useSupabaseAuth();
   const { toast } = useToast();
   const { cancelSubscriptionAPI, refreshSubscriptionStatus } = usePaddle();
   const [activeTab, setActiveTab] = useState("overview");
@@ -326,6 +326,7 @@ const UserProfile = ({ open, onOpenChange }: UserProfileProps) => {
           {/* Desktop Sidebar */}
           <UserProfileSidebar
             user={user}
+            profile={profile}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onSignOut={handleSignOut}

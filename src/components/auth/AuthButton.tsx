@@ -1,9 +1,10 @@
 import React from "react";
-import { SignInButton, SignUpButton, useUser } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import { Button as NeonButton } from "@/components/ui/neon-button";
 import { motion } from "framer-motion";
 import { LogIn, UserPlus } from "lucide-react";
 import UserMenu from "@/components/user/UserMenu";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 interface AuthButtonProps {
   mode?: "signin" | "signup" | "user";
@@ -18,7 +19,8 @@ const AuthButton: React.FC<AuthButtonProps> = ({
   variant = "default",
   neon = true,
 }) => {
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useSupabaseAuth();
+  const navigate = useNavigate();
 
   if (isSignedIn) {
     return (
@@ -35,26 +37,31 @@ const AuthButton: React.FC<AuthButtonProps> = ({
 
   if (mode === "signup") {
     return (
-      <SignUpButton mode="modal">
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <NeonButton variant={variant} className={className} neon={neon}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Sign Up
-          </NeonButton>
-        </motion.div>
-      </SignUpButton>
+      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <NeonButton
+          variant={variant}
+          className={className}
+          neon={neon}
+          onClick={() => navigate("/register")}
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Sign Up
+        </NeonButton>
+      </motion.div>
     );
   }
 
   return (
-    // <SignInButton mode="modal">
-    <div >
-      <motion.div  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        <NeonButton variant={variant} className={className} neon={neon}>
-          Sign In
-        </NeonButton>
-      </motion.div>
-    </div>
+    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      <NeonButton
+        variant={variant}
+        className={className}
+        neon={neon}
+        onClick={() => navigate("/login")}
+      >
+        Sign In
+      </NeonButton>
+    </motion.div>
   );
 };
 

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useNavigate } from "react-router-dom";
 import CounterPreview from "@/components/CounterPreview";
 import RecordingControls from "@/components/RecordingControls";
@@ -51,7 +51,7 @@ const easingFunctions = {
 };
 
 const StudioContent = () => {
-  const { user, profile, updateProfile, refreshProfile } = useClerkAuth();
+  const { user, profile, updateProfile, refreshProfile } = useSupabaseAuth();
   const { toast } = useToast();
   const { isRecording, setIsRecording } = useRecording();
   const [isPaused, setIsPaused] = useState(false);

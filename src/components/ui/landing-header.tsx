@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import AuthButton from "@/components/auth/AuthButton";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
@@ -33,7 +33,7 @@ export const LandingHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useSupabaseAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -47,7 +47,7 @@ export const LandingHeader = () => {
     if (isSignedIn) {
       navigate("/studio");
     } else {
-      navigate("/auth");
+      navigate("/login");
     }
   };
 

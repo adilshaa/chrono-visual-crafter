@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { ArrowRight, Sparkles, Target, Heart } from "lucide-react";
 import { Footer } from "@/components/ui/footer-section";
 import { BackgroundEffects } from "@/components/landing/BackgroundEffects";
@@ -11,13 +11,13 @@ import { StatsSection } from "@/components/about/StatsSection";
 
 const About = () => {
   const navigate = useNavigate();
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useSupabaseAuth();
 
   const handleGetStarted = () => {
     if (isSignedIn) {
       navigate("/studio");
     } else {
-      navigate("/auth");
+      navigate("/login");
     }
   };
 
@@ -43,7 +43,9 @@ const About = () => {
               Empowering Creators Worldwide
             </h1>
             <p className="text-xl md:text-2xl text-white/60 mb-8 leading-relaxed">
-              We're on a mission to democratize professional animation tools, making high-quality counter animations accessible to creators everywhere.
+              We're on a mission to democratize professional animation tools,
+              making high-quality counter animations accessible to creators
+              everywhere.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
@@ -85,7 +87,8 @@ const About = () => {
               Trusted by Creators Globally
             </h2>
             <p className="max-w-2xl mx-auto text-white/60">
-              Our platform has become the go-to solution for professional counter animations.
+              Our platform has become the go-to solution for professional
+              counter animations.
             </p>
           </motion.div>
           <StatsSection />
@@ -106,7 +109,8 @@ const About = () => {
               Our Mission
             </h2>
             <p className="max-w-2xl mx-auto text-white/60 text-lg">
-              Empowering creators with professional-grade animation tools that are powerful yet simple to use.
+              Empowering creators with professional-grade animation tools that
+              are powerful yet simple to use.
             </p>
           </motion.div>
 
@@ -122,9 +126,12 @@ const About = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Target className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Accessibility</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Accessibility
+                </h3>
                 <p className="text-white/60">
-                  Making professional animation tools available to creators at every level
+                  Making professional animation tools available to creators at
+                  every level
                 </p>
               </motion.div>
 
@@ -138,9 +145,12 @@ const About = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-sky-600 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Sparkles className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Innovation</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Innovation
+                </h3>
                 <p className="text-white/60">
-                  Continuously pushing the boundaries of web-based animation technology
+                  Continuously pushing the boundaries of web-based animation
+                  technology
                 </p>
               </motion.div>
 
@@ -154,9 +164,12 @@ const About = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Heart className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Community</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Community
+                </h3>
                 <p className="text-white/60">
-                  Building tools that grow with our community's needs and feedback
+                  Building tools that grow with our community's needs and
+                  feedback
                 </p>
               </motion.div>
             </div>
@@ -178,7 +191,8 @@ const About = () => {
               Our Values
             </h2>
             <p className="max-w-xl mx-auto text-white/60">
-              The principles that guide everything we build and every decision we make.
+              The principles that guide everything we build and every decision
+              we make.
             </p>
           </motion.div>
           <ValueCards />
@@ -199,7 +213,8 @@ const About = () => {
               Our Journey
             </h2>
             <p className="max-w-2xl mx-auto text-white/60">
-              From a simple idea to a global platform serving creators worldwide.
+              From a simple idea to a global platform serving creators
+              worldwide.
             </p>
           </motion.div>
           <div className="max-w-4xl mx-auto">
@@ -222,7 +237,8 @@ const About = () => {
               Ready to Create Something Amazing?
             </h2>
             <p className="text-white/60 mb-8 text-lg">
-              Join thousands of creators who trust Chrono Visual for their professional animations.
+              Join thousands of creators who trust Chrono Visual for their
+              professional animations.
             </p>
             <Button
               onClick={handleGetStarted}

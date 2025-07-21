@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { VideoExportManager } from "@/utils/videoExportFixes";
 import { ErrorHandler } from "@/utils/errorHandling";
 import CounterPreview from "@/components/CounterPreview";
@@ -65,7 +65,7 @@ const easingFunctions = {
 };
 
 const StudioContent = () => {
-  const { user, profile, updateProfile, refreshProfile } = useClerkAuth();
+  const { user, profile, updateProfile, refreshProfile } = useSupabaseAuth();
   const { toast } = useToast();
   const { isRecording, setIsRecording } = useRecording();
   const [isPaused, setIsPaused] = useState(false);
@@ -770,15 +770,7 @@ const StudioContent = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 text-sm text-gray-400 px-3 py-1 rounded border border-[#2BA6FF]/30">
-              <span className="hidden sm:inline">Recording : </span>
-              <span className="font-mono text-[#2BA6FF]">
-                {(recordingTime / 1000).toFixed(1)}s
-              </span>
-              {isRecording && (
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              )}
-            </div>
+            
 
             {/* Performance Indicator */}
 

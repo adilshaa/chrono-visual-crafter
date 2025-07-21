@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import {
   Download,
   Settings,
@@ -95,7 +95,7 @@ export const TransparentExportModal: React.FC<TransparentExportModalProps> = ({
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStatus, setExportStatus] = useState("");
   const { toast } = useToast();
-  const { user, profile, updateProfile, refreshProfile } = useClerkAuth();
+  const { user, profile, updateProfile, refreshProfile } = useSupabaseAuth();
 
   const handlePresetChange = (presetIndex: number) => {
     setSelectedPreset(presetIndex);

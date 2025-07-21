@@ -1,7 +1,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AuthButton from "@/components/auth/AuthButton";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { Share2 } from "lucide-react";
 
 interface MobileHeaderProps {
@@ -15,7 +15,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   isRecording,
   isPaused = false,
 }) => {
-  const { user } = useClerkAuth();
+  const { user } = useSupabaseAuth();
 
   return (
     <header className="bg-[#171717] border-b border-gray-100/10 px-4 py-3 flex-shrink-0 sticky top-0 z-30 h-[60px] max-h-[15vh]">

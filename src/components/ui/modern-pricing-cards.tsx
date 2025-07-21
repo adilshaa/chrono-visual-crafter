@@ -8,7 +8,7 @@ import { Button } from "./button";
 import { cn } from "@/lib/utils";
 import { BorderTrail } from "./border-trail";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 interface PricingPlan {
   id: string;
@@ -35,7 +35,7 @@ export function ModernPricingCards({
   subtitle,
 }: ModernPricingCardsProps) {
   const navigate = useNavigate();
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useSupabaseAuth();
 
   const handlePlanSelect = (plan: PricingPlan) => {
     if (plan.price === 0) {
@@ -44,7 +44,7 @@ export function ModernPricingCards({
     } else {
       // Paid plan - redirect to checkout
       if (!isSignedIn) {
-        navigate("/auth");
+        navigate("/login");
         return;
       }
 

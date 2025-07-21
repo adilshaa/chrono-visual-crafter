@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
@@ -96,7 +96,7 @@ interface PaddleCheckoutData {
 const CheckoutPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn } = useSupabaseAuth();
   const { toast } = useToast();
   const checkoutRef = useRef<HTMLDivElement>(null);
   const [paddle, setPaddle] = useState<Paddle | null>(null);
@@ -328,7 +328,7 @@ const CheckoutPage = () => {
         description: "Please sign in to continue with checkout.",
         variant: "destructive",
       });
-      navigate("/auth");
+      navigate("/login");
       return;
     }
   }, [priceId, isSignedIn, navigate, toast]);
@@ -340,7 +340,7 @@ const CheckoutPage = () => {
     }
 
     // Additional security validations
-    if (!user.primaryEmailAddress?.emailAddress) {
+    if (!user.email) {
       toast({
         title: "Email Required",
         description: "A valid email address is required for checkout.",
@@ -364,7 +364,7 @@ const CheckoutPage = () => {
       console.log("Initializing inline checkout with:", {
         priceId,
         userId: user.id,
-        email: user.primaryEmailAddress?.emailAddress,
+        email: user.email,
       });
 
       try {
@@ -375,7 +375,7 @@ const CheckoutPage = () => {
         const checkoutOptions = {
           items: [{ priceId }],
           customer: {
-            email: user.primaryEmailAddress?.emailAddress,
+            email: user.email,
           },
           settings: {
             displayMode: "inline" as const,
@@ -389,8 +389,8 @@ const CheckoutPage = () => {
           },
           customData: {
             userId: user.id,
-            email: user.primaryEmailAddress?.emailAddress,
-            full_name: user.fullName || "Unknown User",
+            email: user.email,
+            full_name: user.user_metadata?.full_name || "Unknown User",
             timestamp: new Date().toISOString(),
             planName: productInfo.name,
           },
@@ -442,9 +442,7 @@ const CheckoutPage = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Contact information
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {user?.primaryEmailAddress?.emailAddress}
-            </p>
+            <p className="text-sm text-gray-600 mb-4">{user?.email}</p>
           </div>
 
           {/* Checkout Container */}

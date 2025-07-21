@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,13 +17,13 @@ export const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({
   profile,
   onProfileUpdate,
 }) => {
-  const { user } = useUser();
+  const { user, profile: userProfile } = useSupabaseAuth();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    fullName: user?.fullName || profile?.full_name || "",
+    firstName: userProfile?.first_name || "",
+    lastName: userProfile?.last_name || "",
+    fullName: userProfile?.full_name || profile?.full_name || "",
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -38,9 +38,11 @@ export const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({
 
     setIsUpdating(true);
     try {
-      // Use the updateProfile function from useClerkAuth hook
+      // Use the updateProfile function from useSupabaseAuth hook
       // This will update the database and local state in one call
       const result = await onProfileUpdate({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         full_name:
           formData.fullName ||
           `${formData.firstName} ${formData.lastName}`.trim(),
@@ -49,24 +51,6 @@ export const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({
 
       if (result?.error) {
         throw result.error;
-      }
-
-      // Try to update Clerk user metadata (optional - won't fail if it doesn't work)
-      try {
-        await user.update({
-          unsafeMetadata: {
-            ...user.unsafeMetadata,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            fullName: formData.fullName,
-          },
-        });
-      } catch (clerkError) {
-        console.warn(
-          "Clerk metadata update failed (non-critical):",
-          clerkError
-        );
-        // Continue anyway since the database update succeeded
       }
 
       toast({
@@ -138,9 +122,7 @@ export const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({
           <Label className="text-white/80">Current Email</Label>
           <div className="flex items-center gap-2 p-3 rounded-lg bg-[#181818] border border-white/[0.08]">
             <Mail className="w-4 h-4 text-gray-400" />
-            <span className="text-white/60">
-              {user?.primaryEmailAddress?.emailAddress}
-            </span>
+            <span className="text-white/60">{user?.email}</span>
           </div>
         </div>
 

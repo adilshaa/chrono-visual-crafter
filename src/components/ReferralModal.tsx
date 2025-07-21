@@ -8,9 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useClerkAuth } from "@/hooks/useClerkAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Check, Share2, Gift, Users } from "lucide-react";
+import { Copy, Check, Share2, Gift } from "lucide-react";
 
 interface ReferralModalProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ interface ReferralModalProps {
 }
 
 const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose }) => {
-  const { user, profile, refreshProfile } = useClerkAuth();
+  const { user, profile, refreshProfile } = useSupabaseAuth();
   const { toast } = useToast();
   const [referralId, setReferralId] = useState<string | null>(null);
   const [referralLink, setReferralLink] = useState<string>("");
@@ -32,7 +32,9 @@ const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose }) => {
       // Check if user already has a referral ID
       if (profile?.ref_id) {
         setReferralId(profile.ref_id);
-        setReferralLink(`${window.location.origin}/auth?ref=${profile.ref_id}`);
+        setReferralLink(
+          `${window.location.origin}/register?ref=${profile.ref_id}`
+        );
         setLoading(false);
       } else {
         // Generate a new referral ID and save it
@@ -45,8 +47,10 @@ const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose }) => {
     if (!user) return;
 
     try {
-      // Generate a unique referral ID with ref_ prefix
-      const newRefId = `ref_${Math.random().toString(36).substring(2, 10)}`;
+      // Generate a unique referral ID with ref_ prefix and timestamp for uniqueness
+      const timestamp = Date.now().toString(36);
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      const newRefId = `ref_${timestamp}_${randomStr}`;
 
       // Save to database
       const { error } = await supabase
@@ -59,10 +63,15 @@ const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose }) => {
       }
 
       setReferralId(newRefId);
-      setReferralLink(`${window.location.origin}/auth?ref=${newRefId}`);
+      setReferralLink(`${window.location.origin}/register?ref=${newRefId}`);
 
       // Refresh profile to get updated data
       refreshProfile();
+
+      toast({
+        title: "Success!",
+        description: "Your referral link has been generated successfully.",
+      });
     } catch (error) {
       console.error("Error generating referral ID:", error);
       toast({
@@ -167,7 +176,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose }) => {
                   </Button>
                 </div>
 
-                <div className="flex justify-center mt-3">
+                <div className="flex justify-center gap-2 mt-3">
                   <Button
                     onClick={shareReferralLink}
                     variant="outline"

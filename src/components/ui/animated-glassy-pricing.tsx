@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { RippleButton } from "@/components/ui/multi-type-ripple-buttons";
 import { usePaddle } from "@/components/payments/PaddleProvider";
-import { useUser } from "@clerk/clerk-react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 // --- Internal Helper Components (Not exported) --- //
@@ -210,7 +210,7 @@ export const PricingCard = ({
   paddlePriceId,
 }: PricingCardProps) => {
   const { openCheckout, subscription } = usePaddle();
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useSupabaseAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -233,7 +233,7 @@ export const PricingCard = ({
         description: "Please sign in to subscribe to a plan.",
         variant: "destructive",
       });
-      navigate("/auth");
+      navigate("/login");
       return;
     }
 
