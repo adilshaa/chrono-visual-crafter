@@ -307,6 +307,7 @@ type Field = {
   type: FieldType;
   placeholder?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
 };
 
 type AnimatedFormProps = {
@@ -320,6 +321,7 @@ type AnimatedFormProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   googleLogin?: string;
   goTo?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onGoogleClick?: () => void;
 };
 
 type Errors = {
@@ -337,6 +339,7 @@ const AnimatedForm = memo(function AnimatedForm({
   onSubmit,
   googleLogin,
   goTo,
+  onGoogleClick,
 }: AnimatedFormProps) {
   const [visible, setVisible] = useState<boolean>(false);
   const [errors, setErrors] = useState<Errors>({});
@@ -363,13 +366,8 @@ const AnimatedForm = memo(function AnimatedForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formErrors = validateForm(event);
-    if (Object.keys(formErrors).length === 0) {
-      onSubmit(event);
-      console.log("Form submitted");
-    } else {
-      setErrors(formErrors);
-    }
+    // Let the parent component handle validation since we're now using real-time validation
+    onSubmit(event);
   };
 
   return (
@@ -397,7 +395,9 @@ const AnimatedForm = memo(function AnimatedForm({
             <button
               className="g-button group/btn bg-transparent w-full rounded-md border h-10 font-medium outline-hidden hover:cursor-pointer"
               type="button"
-              onClick={() => console.log("Google login clicked")}
+              onClick={
+                onGoogleClick || (() => console.log("Google login clicked"))
+              }
             >
               <span className="flex items-center justify-center w-full h-full gap-3">
                 <svg
@@ -484,9 +484,9 @@ const AnimatedForm = memo(function AnimatedForm({
                   )}
                 </section>
                 <section className="h-4">
-                  {errors[field.label] && (
+                  {(field.error || errors[field.label]) && (
                     <p className="text-red-500 text-xs">
-                      {errors[field.label]}
+                      {field.error || errors[field.label]}
                     </p>
                   )}
                 </section>

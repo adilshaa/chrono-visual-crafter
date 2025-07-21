@@ -27,11 +27,11 @@ const navItems: NavigationItem[] = [
     label: "Billing",
     icon: <BillingIcon className="w-4 h-4" />,
   },
-  // {
-  //   id: "security",
-  //   label: "Security",
-  //   icon: <ShieldAlert className="w-4 h-4" />,
-  // },
+  {
+    id: "security",
+    label: "Security",
+    icon: <ShieldAlert className="w-4 h-4" />,
+  },
 ];
 
 export const UserProfileNavigation: React.FC<UserProfileNavigationProps> = ({

@@ -194,7 +194,16 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
             logger.error("Error processing referral", { error, referralId });
           }
         }
-
+        console.log("newUserCredits--2", {
+          user_id: user.id,
+          email: user.email || "",
+          full_name: user.user_metadata?.full_name || "",
+          avatar_url: user.user_metadata?.avatar_url || null,
+          subscription_status: "free",
+          subscription_plan: "free",
+          credits: newUserCredits,
+          referred_by: referrerUserId,
+        });
         const { data: newProfile, error: insertError } = await supabase
           .from("profiles")
           .insert({
@@ -291,11 +300,15 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      logger.info("Auth state changed", { event, session: !!session });
+      logger.info("Auth state changed", { event, session: session });
 
       setSession(session);
       setUser(session?.user ?? null);
       lastSessionCheckRef.current = Date.now();
+
+      // Note: OAuth referral handling has been removed since Google signup
+      // is now disabled when referral links are used. Referrals are only
+      // processed through manual signup to ensure proper attribution.
 
       if (session?.user) {
         try {
@@ -421,24 +434,10 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
       }
     };
 
-    // Set up visibility change handler for tab focus
-    const handleVisibilityChange = async () => {
-      if (!mounted || document.hidden) return;
-
-      logger.debug("Tab became visible, validating session");
-
-      try {
-        await validateAndRefreshSession();
-      } catch (error) {
-        logger.error("Error validating session on tab focus", { error });
-      }
-    };
-
     // Only set up listeners if we have a session
     if (session) {
       setupPeriodicValidation();
       window.addEventListener("storage", handleStorageChange);
-      document.addEventListener("visibilitychange", handleVisibilityChange);
     }
 
     return () => {
@@ -449,7 +448,6 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
       }
 
       window.removeEventListener("storage", handleStorageChange);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
 
       if (sessionRefreshTimeoutRef.current) {
         clearTimeout(sessionRefreshTimeoutRef.current);

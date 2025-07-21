@@ -6,11 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/contexts/SupabaseAuthContext";
 import { handleAuthError } from "@/lib/auth-errors";
 import { logger } from "@/lib/logger";
-import {
-  AnimatedForm,
-  Ripple,
-  TechOrbitDisplay,
-} from "@/components/ui/modern-animated-sign-in";
+import { AnimatedForm } from "@/components/ui/modern-animated-sign-in";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -81,7 +78,25 @@ const Login = () => {
 
       if (response.error) {
         const errorMessage = handleAuthError(response.error);
-        setErrors({ general: errorMessage });
+
+        // Check for specific error types to provide better feedback
+        if (
+          response.error.message?.includes("Invalid login credentials") ||
+          response.error.message?.includes("Invalid email or password")
+        ) {
+          setErrors({
+            general:
+              "Invalid email or password. Please check your credentials and try again.",
+          });
+        } else if (response.error.message?.includes("Email not confirmed")) {
+          setErrors({
+            general:
+              "Please verify your email address before signing in. Check your inbox for a verification link.",
+          });
+        } else {
+          setErrors({ general: errorMessage });
+        }
+
         logger.error("Sign in failed", {
           error: response.error,
           email: formData.email,
@@ -112,159 +127,58 @@ const Login = () => {
     navigate("/reset-password");
   };
 
-  // Define tech icons for the orbit display
-  const iconsArray = [
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-          <path d="M2 2l7.586 7.586"></path>
-          <circle cx="11" cy="11" r="2"></circle>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 20,
-      radius: 100,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-          <rect x="2" y="9" width="4" height="12"></rect>
-          <circle cx="4" cy="4" r="2"></circle>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 10,
-      radius: 100,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="50"
-          height="50"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-          <path d="M2 17l10 5 10-5"></path>
-          <path d="M2 12l10 5 10-5"></path>
-        </svg>
-      ),
-      className: "size-[50px] border-none bg-transparent",
-      radius: 210,
-      duration: 20,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="50"
-          height="50"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="10"></circle>
-          <circle cx="12" cy="12" r="4"></circle>
-          <line x1="21.17" y1="8" x2="12" y2="8"></line>
-          <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
-          <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
-        </svg>
-      ),
-      className: "size-[50px] border-none bg-transparent",
-      radius: 210,
-      duration: 20,
-      delay: 20,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 20,
-      radius: 150,
-      path: false,
-      reverse: true,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-          <polyline points="2 17 12 22 22 17"></polyline>
-          <polyline points="2 12 12 17 22 12"></polyline>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 10,
-      radius: 150,
-      path: false,
-      reverse: true,
-    },
-  ];
+  // Handle Google Sign In
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      logger.info("Attempting Google sign in");
+
+      // Clear any previous stored referral ID to avoid confusion
+      localStorage.removeItem("referralId");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/studio",
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+
+      if (error) {
+        const errorMessage = handleAuthError(error);
+
+        // Provide more specific error messages for Google sign-in failures
+        if (
+          error.message?.includes("popup_closed_by_user") ||
+          error.message?.includes("popup closed")
+        ) {
+          setErrors({
+            general: "Authentication was cancelled. Please try again.",
+          });
+        } else if (error.message?.includes("network")) {
+          setErrors({
+            general:
+              "Network error. Please check your internet connection and try again.",
+          });
+        } else {
+          setErrors({ general: errorMessage });
+        }
+
+        logger.error("Google sign in failed", { error });
+      }
+    } catch (error) {
+      const errorMessage = handleAuthError(error as Error);
+      setErrors({ general: errorMessage });
+      logger.error("Unexpected Google sign in error", { error });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const pageVariants = {
     hidden: { opacity: 0 },
@@ -299,10 +213,6 @@ const Login = () => {
     submitButton: isLoading ? "Signing In..." : "Sign In",
     textVariantButton: "Forgot your password?",
     errorField: errors.general,
-  };
-
-  const goToRegister = () => {
-    navigate("/register");
   };
 
   return (
@@ -343,10 +253,22 @@ const Login = () => {
 
       {/* Main Content */}
       <div className="relative z-10 w-full flex flex-col md:flex-row">
-        {/* Left Side - Animated Display */}
-        <div className="hidden md:flex md:w-1/2 relative">
-          <Ripple mainCircleSize={100} />
-          <TechOrbitDisplay iconsArray={iconsArray} text="Welcome" />
+        {/* Left Side - Header and Quote */}
+        <div className="hidden md:flex md:w-1/2 md:flex-col md:justify-center md:items-center md:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="text-center"
+          >
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent mb-6">
+              Welcome Back
+            </h1>
+            <p className="text-xl text-gray-300 italic max-w-md mx-auto">
+              "Continue your creative journey and bring your ideas to life with
+              our powerful tools."
+            </p>
+          </motion.div>
         </div>
 
         {/* Right Side - Form */}
@@ -356,6 +278,7 @@ const Login = () => {
             onSubmit={handleSubmit}
             goTo={goToForgotPassword}
             googleLogin="Sign in with Google"
+            onGoogleClick={handleGoogleSignIn}
           />
         </div>
       </div>

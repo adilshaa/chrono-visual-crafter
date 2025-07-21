@@ -1,16 +1,13 @@
-import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/contexts/SupabaseAuthContext";
 import { handleAuthError } from "@/lib/auth-errors";
 import { logger } from "@/lib/logger";
-import {
-  AnimatedForm,
-  Ripple,
-  TechOrbitDisplay,
-} from "@/components/ui/modern-animated-sign-in";
+import { AnimatedForm } from "@/components/ui/modern-animated-sign-in";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -44,18 +41,52 @@ const Register = () => {
   const handleInputChange =
     (field: keyof typeof formData) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
       setFormData((prev) => ({
         ...prev,
-        [field]: e.target.value,
+        [field]: value,
       }));
 
-      // Clear field-specific error when user starts typing
-      if (errors[field]) {
-        setErrors((prev) => ({
-          ...prev,
-          [field]: undefined,
-        }));
+      // Real-time validation
+      const newErrors: typeof errors = { ...errors };
+
+      // Clear the current field error first
+      delete newErrors[field];
+
+      // Real-time validation for each field
+      if (field === "fullName") {
+        if (value.trim() && value.trim().length < 2) {
+          newErrors.fullName = "Full name must be at least 2 characters";
+        }
+      } else if (field === "email") {
+        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          newErrors.email = "Please enter a valid email address";
+        }
+      } else if (field === "password") {
+        if (value) {
+          if (value.length < 6) {
+            newErrors.password = "Password must be at least 6 characters";
+          } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
+            newErrors.password =
+              "Password must contain at least one uppercase letter, one lowercase letter, and one number";
+          }
+        }
+        // Also check confirm password if it exists
+        if (formData.confirmPassword && value !== formData.confirmPassword) {
+          newErrors.confirmPassword = "Passwords do not match";
+        } else if (
+          formData.confirmPassword &&
+          value === formData.confirmPassword
+        ) {
+          delete newErrors.confirmPassword;
+        }
+      } else if (field === "confirmPassword") {
+        if (value && formData.password !== value) {
+          newErrors.confirmPassword = "Passwords do not match";
+        }
       }
+
+      setErrors(newErrors);
     };
 
   const validateForm = () => {
@@ -96,6 +127,11 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Track if a registration request is in progress to prevent duplicates
+  const [isRegistering, setIsRegistering] = useState(false);
+  // Track emails that have been checked to prevent duplicate requests
+  const [checkedEmails, setCheckedEmails] = useState<Set<string>>(new Set());
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -103,10 +139,58 @@ const Register = () => {
       return;
     }
 
+    // Prevent multiple concurrent requests
+    if (isRegistering) {
+      return;
+    }
+
+    // Check if we've already determined this email exists
+    if (checkedEmails.has(formData.email)) {
+      setErrors({
+        email:
+          "This email is already registered. Please use a different email or sign in.",
+        general: undefined,
+      });
+      return;
+    }
+
     setIsLoading(true);
+    setIsRegistering(true);
     setErrors({});
 
     try {
+      logger.info("Checking if email already exists", {
+        email: formData.email,
+      });
+
+      // Check if the email exists in the profiles table
+      const { data: existingProfiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("email", formData.email)
+        .limit(1);
+
+      if (profileError) {
+        logger.error("Error checking existing profiles", {
+          error: profileError,
+        });
+      }
+
+      // If the email already exists in the profiles table, show an error
+      if (existingProfiles && existingProfiles.length > 0) {
+        // Add this email to our checked emails set to prevent future requests
+        setCheckedEmails((prev) => new Set(prev).add(formData.email));
+
+        setErrors({
+          email:
+            "This email is already registered. Please use a different email or sign in.",
+          general: undefined,
+        });
+        setIsLoading(false);
+        setIsRegistering(false);
+        return;
+      }
+
       logger.info("Attempting sign up", {
         email: formData.email,
         fullName: formData.fullName,
@@ -116,10 +200,28 @@ const Register = () => {
         full_name: formData.fullName.trim(),
         referral_id: referralId,
       });
-
+      logger.info("Sign up response", {
+        response,
+        email: formData.email,
+      });
       if (response.error) {
         const errorMessage = handleAuthError(response.error);
-        setErrors({ general: errorMessage });
+
+        // Check if the error is about an existing user
+        if (
+          response.error.message?.includes("already registered") ||
+          response.error.message?.includes("already in use") ||
+          response.error.message?.includes("User already registered")
+        ) {
+          setErrors({
+            email:
+              "This email is already registered. Please use a different email or sign in.",
+            general: undefined,
+          });
+        } else {
+          setErrors({ general: errorMessage });
+        }
+
         logger.error("Sign up failed", {
           error: response.error,
           email: formData.email,
@@ -166,159 +268,79 @@ const Register = () => {
     navigate("/login");
   };
 
-  // Define tech icons for the orbit display
-  const iconsArray = [
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-          <path d="M2 2l7.586 7.586"></path>
-          <circle cx="11" cy="11" r="2"></circle>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 20,
-      radius: 100,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-          <rect x="2" y="9" width="4" height="12"></rect>
-          <circle cx="4" cy="4" r="2"></circle>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 10,
-      radius: 100,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="50"
-          height="50"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-          <path d="M2 17l10 5 10-5"></path>
-          <path d="M2 12l10 5 10-5"></path>
-        </svg>
-      ),
-      className: "size-[50px] border-none bg-transparent",
-      radius: 210,
-      duration: 20,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="50"
-          height="50"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="10"></circle>
-          <circle cx="12" cy="12" r="4"></circle>
-          <line x1="21.17" y1="8" x2="12" y2="8"></line>
-          <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
-          <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
-        </svg>
-      ),
-      className: "size-[50px] border-none bg-transparent",
-      radius: 210,
-      duration: 20,
-      delay: 20,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 20,
-      radius: 150,
-      path: false,
-      reverse: true,
-    },
-    {
-      component: () => (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-          <polyline points="2 17 12 22 22 17"></polyline>
-          <polyline points="2 12 12 17 22 12"></polyline>
-        </svg>
-      ),
-      className: "size-[30px] border-none bg-transparent",
-      duration: 20,
-      delay: 10,
-      radius: 150,
-      path: false,
-      reverse: true,
-    },
-  ];
+  // Handle Google Sign Up
+  const handleGoogleSignUp = async () => {
+    // If referral ID is present, block Google signup and show error
+    if (referralId) {
+      setErrors({
+        general:
+          "Google signup is not available when using a referral link. Please sign up manually to claim your referral bonus.",
+      });
+      return;
+    }
+
+    // Prevent multiple concurrent requests
+    if (isRegistering) {
+      return;
+    }
+
+    setIsLoading(true);
+    setIsRegistering(true);
+    setErrors({});
+
+    try {
+      logger.info("Attempting Google sign up");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/studio",
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+
+      if (error) {
+        const errorMessage = handleAuthError(error);
+
+        // Provide more specific error messages for Google sign-up failures
+        if (
+          error.message?.includes("popup_closed_by_user") ||
+          error.message?.includes("popup closed")
+        ) {
+          setErrors({
+            general: "Authentication was cancelled. Please try again.",
+          });
+        } else if (error.message?.includes("network")) {
+          setErrors({
+            general:
+              "Network error. Please check your internet connection and try again.",
+          });
+        } else if (
+          error.message?.includes("already registered") ||
+          error.message?.includes("already in use")
+        ) {
+          setErrors({
+            general:
+              "This Google account is already registered. Please sign in instead.",
+          });
+        } else {
+          setErrors({ general: errorMessage });
+        }
+
+        logger.error("Google sign up failed", { error });
+      }
+    } catch (error) {
+      const errorMessage = handleAuthError(error as Error);
+      setErrors({ general: errorMessage });
+      logger.error("Unexpected Google sign up error", { error });
+    } finally {
+      setIsLoading(false);
+      setIsRegistering(false);
+    }
+  };
 
   const pageVariants = {
     hidden: { opacity: 0 },
@@ -341,6 +363,7 @@ const Register = () => {
         type: "text" as const,
         placeholder: "Enter your full name",
         onChange: handleInputChange("fullName"),
+        error: errors.fullName,
       },
       {
         label: "Email",
@@ -348,6 +371,7 @@ const Register = () => {
         type: "email" as const,
         placeholder: "Enter your email address",
         onChange: handleInputChange("email"),
+        error: errors.email,
       },
       {
         label: "Password",
@@ -355,6 +379,7 @@ const Register = () => {
         type: "password" as const,
         placeholder: "Create a password",
         onChange: handleInputChange("password"),
+        error: errors.password,
       },
       {
         label: "Confirm Password",
@@ -362,6 +387,7 @@ const Register = () => {
         type: "password" as const,
         placeholder: "Confirm your password",
         onChange: handleInputChange("confirmPassword"),
+        error: errors.confirmPassword,
       },
     ],
     submitButton: isLoading ? "Creating Account..." : "Create Account",
@@ -407,32 +433,22 @@ const Register = () => {
 
       {/* Main Content */}
       <div className="relative z-10 w-full flex flex-col md:flex-row">
-        {/* Referral Banner */}
-        {referralId && (
+        {/* Left Side - Header and Quote */}
+        <div className="hidden md:flex md:w-1/2 md:flex-col md:justify-center md:items-center md:px-12">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute top-0 left-0 right-0 z-30 mb-6 p-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-lg backdrop-blur-sm"
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="text-center"
           >
-            <div className="text-center">
-              <h3 className="text-white font-semibold mb-1">
-                🎉 You've been invited!
-              </h3>
-              <p className="text-blue-200 text-sm">
-                Sign up now and get{" "}
-                <span className="font-bold text-blue-300">
-                  20 bonus credits
-                </span>{" "}
-                to get started!
-              </p>
-            </div>
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent mb-6">
+              Start Creating Today
+            </h1>
+            <p className="text-xl text-gray-300 italic max-w-md mx-auto">
+              "Join our community and bring your creative visions to life with
+              powerful tools and endless possibilities."
+            </p>
           </motion.div>
-        )}
-
-        {/* Left Side - Animated Display */}
-        <div className="hidden md:flex md:w-1/2 relative">
-          <Ripple mainCircleSize={100} />
-          <TechOrbitDisplay iconsArray={iconsArray} text="Join Us" />
         </div>
 
         {/* Right Side - Form */}
@@ -441,7 +457,8 @@ const Register = () => {
             {...formFields}
             onSubmit={handleSubmit}
             goTo={goToLogin}
-            googleLogin="Sign up with Google"
+            googleLogin={referralId ? undefined : "Sign up with Google"}
+            onGoogleClick={referralId ? undefined : handleGoogleSignUp}
           />
         </div>
       </div>
