@@ -372,6 +372,36 @@ const CheckoutPage = () => {
         const currentDomain = window.location.origin;
         const successUrl = `${currentDomain}/studio?payment=success`;
 
+        // Determine which container to use based on screen size
+        const isMobile = window.innerWidth < 1024; // lg breakpoint
+        const frameTargetClass = isMobile
+          ? "checkout-container-mobile"
+          : "checkout-container-desktop";
+
+        console.log(
+          "Using frame target class:",
+          frameTargetClass,
+          "isMobile:",
+          isMobile
+        );
+
+        // // Wait a bit to ensure the DOM elements are rendered
+        // await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // // Check if the target container exists
+        // const targetContainer = document.querySelector(frameTargetClass);
+        // console.log(targetContainer,'target')
+        // if (!targetContainer) {
+        //   console.error("Target container not found:", frameTargetClass);
+        //   toast({
+        //     title: "Checkout Error",
+        //     description:
+        //       "Payment form container not found. Please refresh the page.",
+        //     variant: "destructive",
+        //   });
+        //   return;
+        // }
+          console.log(frameTargetClass,'class');
         const checkoutOptions = {
           items: [{ priceId }],
           customer: {
@@ -381,8 +411,8 @@ const CheckoutPage = () => {
             displayMode: "inline" as const,
             theme: "light" as const,
             locale: "en",
-            frameTarget: "checkout-container",
-            frameInitialHeight: 450,
+            frameTarget: frameTargetClass,
+            frameInitialHeight: isMobile ? 400 : 450,
             frameStyle:
               "width: 100%; min-width: 312px; background-color: transparent; border: none;",
             successUrl: successUrl,
@@ -396,7 +426,7 @@ const CheckoutPage = () => {
           },
         };
 
-        // Open checkout
+        // Open checkout - it will target the appropriate container
         paddle.Checkout.open(checkoutOptions);
       } catch (error) {
         console.error("Error initializing checkout:", error);
@@ -424,21 +454,204 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Checkout Form (White Background, Scrollable) */}
-      <div className="flex-1 bg-white overflow-y-auto">
-        <div className="max-w-lg mx-auto px-8 py-12 min-h-screen ">
-          {/* Back Button */}
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
+    <>
+      {/* Desktop Layout - Hidden on mobile */}
+      <div className="min-h-screen flex hidden lg:flex">
+        {/* Left Side - Checkout Form (White Background, Scrollable) */}
+        <div className="flex-1 bg-white overflow-y-auto">
+          <div className="max-w-lg mx-auto px-8 py-12 min-h-screen ">
+            {/* Back Button */}
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
 
+            {/* Contact Information */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Contact information
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">{user?.email}</p>
+            </div>
+
+            {/* Checkout Container */}
+            <div className="bg-white rounded-lg">
+              <div
+                className="checkout-container-desktop"
+                ref={checkoutRef}
+              ></div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="text-xs text-gray-500 text-center mt-6">
+              🔒 Your payment information is secure and encrypted
+            </div>
+
+            {/* Additional Info */}
+            <div className="text-sm text-gray-500 space-y-2 mt-8">
+              <p>
+                By subscribing, you authorize {productInfo.name} to charge you
+                according to the terms until you cancel.
+              </p>
+              <p className="flex items-center gap-1">
+                Powered by
+                <span className="font-medium">Paddle</span> • Terms • Privacy
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Product Info (Dark Background with Blue Shade, Fixed) */}
+        <div className="flex-1 relative overflow-hidden bg-black fixed right-0 top-0 h-screen">
+          {/* Background effects from Pricing page */}
+          <div className="absolute inset-0 z-0">
+            <div className="flex flex-col items-end absolute -right-60 -top-10 blur-xl z-0">
+              <div className="h-[10rem] rounded-full w-[60rem] z-1 bg-gradient-to-b blur-[6rem] from-[#1FB4FF] to-sky-400"></div>
+              <div className="h-[10rem] rounded-full w-[90rem] z-1 bg-gradient-to-b blur-[6rem] from-[#1FB4FF]/10 to-sky-400"></div>
+              <div className="h-[10rem] rounded-full w-[60rem] z-1 bg-gradient-to-b blur-[6rem] from-[#1FB4FF]/10 to-sky-400"></div>
+            </div>
+            <div className="absolute inset-0 z-0 bg-noise opacity-30"></div>
+
+            {/* Additional gradients for more visual interest */}
+            <div className="absolute bottom-0 left-0 h-[30rem] w-[30rem] rounded-full blur-[8rem] bg-gradient-to-tr from-purple-600/10 to-transparent"></div>
+            <div className="absolute top-1/2 left-1/4 h-[20rem] w-[20rem] rounded-full blur-[7rem] bg-gradient-to-br from-cyan-500/10 to-transparent"></div>
+
+            {/* Deep black overlay to maintain deep black background */}
+            <div className="absolute inset-0 z-1 bg-black/50"></div>
+          </div>
+
+          {/* Product Content */}
+          <div className="relative z-10 max-w-lg mx-auto px-8 py-12 h-full flex flex-col justify-center">
+            {/* Company Logo and Name */}
+            <div className="text-center mb-8">
+              <div className=" mx-auto  rounded-xl flex items-center justify-center">
+                <div className="flex w-20 h-20 items-center justify-center ">
+                  <img src="/favicon.ico" className="font-bold" />
+                </div>
+              </div>
+              <h1 className="text-2xl font-bold text-white">Countflow</h1>
+              <p className="text-white/60 text-sm">
+                Professional Animation Tools
+              </p>
+            </div>
+
+            {/* Product Card - New Design */}
+            <CheckoutPlanCard
+              name={productInfo.name}
+              description={productInfo.description}
+              price={productInfo.price}
+              features={productInfo.features}
+              isPopular={productInfo.name === "Pro"}
+              className="mb-6"
+              paddleData={checkoutData}
+            />
+
+            {/* Billing Summary */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <div className="space-y-2 text-sm text-white/80">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>
+                    {checkoutData
+                      ? `${
+                          checkoutData.currency_code
+                        } ${checkoutData.totals.subtotal.toFixed(2)}`
+                      : `$${productInfo.price.toFixed(2)}`}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tax</span>
+                  <span>
+                    {checkoutData
+                      ? `${
+                          checkoutData.currency_code
+                        } ${checkoutData.totals.tax.toFixed(2)}`
+                      : "Enter address to calculate"}
+                  </span>
+                </div>
+                <div className="flex justify-between font-medium text-white pt-2 border-t border-white/20">
+                  <span>Total due today</span>
+                  <span>
+                    {checkoutData
+                      ? `${
+                          checkoutData.currency_code
+                        } ${checkoutData.totals.total.toFixed(2)}`
+                      : `$${productInfo.price.toFixed(2)}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Layout - Visible only on mobile */}
+      <div className="min-h-screen bg-white lg:hidden">
+        {/* Mobile Header with Plan Info */}
+        <div className="bg-gradient-to-r from-gray-900 to-black text-white">
+          <div className="px-4 py-6">
+            {/* Back Button and Plan Name */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
+              <div className="text-right">
+                <div className="text-lg font-semibold">{productInfo.name}</div>
+                <div className="text-sm text-white/60">
+                  {productInfo.billingCycle}
+                </div>
+              </div>
+            </div>
+
+            {/* Price and Tax Summary */}
+            <div className="bg-white/10 rounded-lg p-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-white/80">Subtotal</span>
+                  <span className="text-white">
+                    {checkoutData
+                      ? `${
+                          checkoutData.currency_code
+                        } ${checkoutData.totals.subtotal.toFixed(2)}`
+                      : `$${productInfo.price.toFixed(2)}`}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/80">Tax</span>
+                  <span className="text-white">
+                    {checkoutData
+                      ? `${
+                          checkoutData.currency_code
+                        } ${checkoutData.totals.tax.toFixed(2)}`
+                      : "Calculated at checkout"}
+                  </span>
+                </div>
+                <div className="flex justify-between font-semibold text-white pt-2 border-t border-white/20">
+                  <span>Total</span>
+                  <span>
+                    {checkoutData
+                      ? `${
+                          checkoutData.currency_code
+                        } ${checkoutData.totals.total.toFixed(2)}`
+                      : `$${productInfo.price.toFixed(2)}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Payment Form */}
+        <div className="px-4 py-6">
           {/* Contact Information */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Contact information
             </h3>
@@ -446,17 +659,17 @@ const CheckoutPage = () => {
           </div>
 
           {/* Checkout Container */}
-          <div className="bg-white rounded-lg">
-            <div className="checkout-container" ref={checkoutRef}></div>
+          <div className="bg-white rounded-lg mb-6">
+            <div className=" checkout-container-mobile"></div>
           </div>
 
           {/* Security Notice */}
-          <div className="text-xs text-gray-500 text-center mt-6">
+          <div className="text-xs text-gray-500 text-center mb-6">
             🔒 Your payment information is secure and encrypted
           </div>
 
           {/* Additional Info */}
-          <div className="text-sm text-gray-500 space-y-2 mt-8">
+          <div className="text-sm text-gray-500 space-y-2">
             <p>
               By subscribing, you authorize {productInfo.name} to charge you
               according to the terms until you cancel.
@@ -468,90 +681,7 @@ const CheckoutPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Right Side - Product Info (Dark Background with Blue Shade, Fixed) */}
-      <div className="flex-1 relative overflow-hidden bg-black fixed right-0 top-0 h-screen">
-        {/* Background effects from Pricing page */}
-        <div className="absolute inset-0 z-0">
-          <div className="flex flex-col items-end absolute -right-60 -top-10 blur-xl z-0">
-            <div className="h-[10rem] rounded-full w-[60rem] z-1 bg-gradient-to-b blur-[6rem] from-[#1FB4FF] to-sky-400"></div>
-            <div className="h-[10rem] rounded-full w-[90rem] z-1 bg-gradient-to-b blur-[6rem] from-[#1FB4FF]/10 to-sky-400"></div>
-            <div className="h-[10rem] rounded-full w-[60rem] z-1 bg-gradient-to-b blur-[6rem] from-[#1FB4FF]/10 to-sky-400"></div>
-          </div>
-          <div className="absolute inset-0 z-0 bg-noise opacity-30"></div>
-
-          {/* Additional gradients for more visual interest */}
-          <div className="absolute bottom-0 left-0 h-[30rem] w-[30rem] rounded-full blur-[8rem] bg-gradient-to-tr from-purple-600/10 to-transparent"></div>
-          <div className="absolute top-1/2 left-1/4 h-[20rem] w-[20rem] rounded-full blur-[7rem] bg-gradient-to-br from-cyan-500/10 to-transparent"></div>
-
-          {/* Deep black overlay to maintain deep black background */}
-          <div className="absolute inset-0 z-1 bg-black/50"></div>
-        </div>
-
-        {/* Product Content */}
-        <div className="relative z-10 max-w-lg mx-auto px-8 py-12 h-full flex flex-col justify-center">
-          {/* Company Logo and Name */}
-          <div className="text-center mb-8">
-            <div className=" mx-auto  rounded-xl flex items-center justify-center">
-              <div className="flex w-20 h-20 items-center justify-center ">
-                <img src="/favicon.ico" className="font-bold" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold text-white">Countflow</h1>
-            <p className="text-white/60 text-sm">
-              Professional Animation Tools
-            </p>
-          </div>
-
-          {/* Product Card - New Design */}
-          <CheckoutPlanCard
-            name={productInfo.name}
-            description={productInfo.description}
-            price={productInfo.price}
-            features={productInfo.features}
-            isPopular={productInfo.name === "Pro"}
-            className="mb-6"
-            paddleData={checkoutData}
-          />
-
-          {/* Billing Summary */}
-          <div className="bg-white/5 rounded-lg p-4">
-            <div className="space-y-2 text-sm text-white/80">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>
-                  {checkoutData
-                    ? `${
-                        checkoutData.currency_code
-                      } ${checkoutData.totals.subtotal.toFixed(2)}`
-                    : `$${productInfo.price.toFixed(2)}`}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>
-                  {checkoutData
-                    ? `${
-                        checkoutData.currency_code
-                      } ${checkoutData.totals.tax.toFixed(2)}`
-                    : "Enter address to calculate"}
-                </span>
-              </div>
-              <div className="flex justify-between font-medium text-white pt-2 border-t border-white/20">
-                <span>Total due today</span>
-                <span>
-                  {checkoutData
-                    ? `${
-                        checkoutData.currency_code
-                      } ${checkoutData.totals.total.toFixed(2)}`
-                    : `$${productInfo.price.toFixed(2)}`}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 
