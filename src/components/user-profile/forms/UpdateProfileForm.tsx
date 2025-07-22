@@ -41,8 +41,6 @@ export const UpdateProfileForm: React.FC<UpdateProfileFormProps> = ({
       // Use the updateProfile function from useSupabaseAuth hook
       // This will update the database and local state in one call
       const result = onProfileUpdate({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
         full_name: formData.fullName ||
           `${formData.firstName} ${formData.lastName}`.trim(),
         updated_at: new Date().toISOString(),

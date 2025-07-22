@@ -1,6 +1,6 @@
 # Supabase Auth Infrastructure
 
-This document describes the Supabase Auth infrastructure created to replace Clerk authentication while maintaining compatibility with existing code.
+This document describes the Supabase Auth infrastructure used for user authentication and session management.
 
 ## Components
 
@@ -37,9 +37,9 @@ import {
 const { user, profile, loading, signIn, signOut } = useAuthContext();
 ```
 
-### 2. Compatibility Hook (`src/hooks/useSupabaseAuth.tsx`)
+### 2. Auth Hook (`src/hooks/useSupabaseAuth.tsx`)
 
-A drop-in replacement for `useClerkAuth` that maintains the same interface:
+A convenient hook that provides authentication functionality:
 
 ```tsx
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
@@ -59,11 +59,11 @@ const {
 
 - Payment success toast handling
 - Profile refresh functionality
-- Same return interface as Clerk hook
+- Consistent interface for authentication operations
 
 ### 3. Auth Wrapper (`src/components/auth/SupabaseAuthWrapper.tsx`)
 
-Replaces `ClerkAuthWrapper` with Supabase authentication:
+Provides Supabase authentication wrapper:
 
 ```tsx
 import SupabaseAuthWrapper from "@/components/auth/SupabaseAuthWrapper";
@@ -240,13 +240,13 @@ const data = await withAuth(async () => {
 });
 ```
 
-## Migration Compatibility
+## Authentication Features
 
-The infrastructure maintains compatibility with existing Clerk code:
+The infrastructure provides comprehensive authentication functionality:
 
-1. **Same Hook Interface**: `useSupabaseAuth` returns the same structure as `useClerkAuth`
-2. **Profile Compatibility**: Existing profile operations continue to work
-3. **Session Handling**: Maintains existing session behavior patterns
+1. **Consistent Interface**: `useSupabaseAuth` provides a clean, consistent API
+2. **Profile Management**: Full profile operations with automatic syncing
+3. **Session Handling**: Robust session management with automatic refresh
 4. **Error Handling**: Provides user-friendly error messages
 
 ## Environment Variables
@@ -280,11 +280,11 @@ validateAuthInfrastructure();
 
 After implementing this infrastructure:
 
-1. Create authentication pages (Login, Register, VerifyOTP)
-2. Update routing to use new auth pages
-3. Replace Clerk components throughout the app
-4. Test all existing functionality
-5. Remove Clerk dependencies
+1. Authentication pages are implemented (Login, Register, VerifyOTP)
+2. Routing is configured for auth pages
+3. All authentication components use Supabase
+4. Full functionality testing completed
+5. Clean, Clerk-free implementation
 
 ## Troubleshooting
 

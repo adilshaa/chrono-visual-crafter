@@ -24,7 +24,7 @@ export const privacyPolicyData = {
           content:
             "When you create an account or use our services, we may collect:",
           items: [
-            "Name and email address (via Clerk authentication)",
+            "Name and email address (via secure authentication)",
             "Profile information you choose to provide",
             "Payment information (processed securely through Paddle)",
             "Communication preferences and settings",
@@ -73,7 +73,7 @@ export const privacyPolicyData = {
           content:
             "We share information with trusted third-party providers who assist in operating our platform:",
           items: [
-            "<strong>Clerk:</strong> Authentication and user management services",
+            "<strong>Supabase:</strong> Authentication and user management services",
             "<strong>Paddle:</strong> Payment processing and subscription management",
             "<strong>Supabase:</strong> Database and backend infrastructure",
             "<strong>Vercel:</strong> Hosting and content delivery services",

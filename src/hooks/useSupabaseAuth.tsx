@@ -2,10 +2,12 @@ import { useAuthContext } from "@/contexts/SupabaseAuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useRef } from "react";
+import { useSessionContext } from "@supabase/auth-helpers-react";
+import { logger } from "@/lib/logger";
 
-// Interface that matches the current useClerkAuth hook to maintain compatibility
+// Interface for Supabase authentication hook
 interface UseSupabaseAuthReturn {
-  user: any; // Using any to match current Clerk user interface
+  user: any; // Supabase user object
   profile: any;
   loading: boolean;
   isSignedIn: boolean;
@@ -24,10 +26,21 @@ export const useSupabaseAuth = (): UseSupabaseAuthReturn => {
     signOut: contextSignOut,
   } = useAuthContext();
 
+  // Access the session context for additional session information
+  const { isLoading: sessionLoading, error: sessionError } =
+    useSessionContext();
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const paymentToastShown = useRef(false);
+
+  // Log any session errors
+  useEffect(() => {
+    if (sessionError) {
+      logger.error("Session error in useSupabaseAuth", { error: sessionError });
+    }
+  }, [sessionError]);
 
   // Handle payment success parameter (maintaining existing functionality)
   useEffect(() => {
@@ -56,14 +69,14 @@ export const useSupabaseAuth = (): UseSupabaseAuthReturn => {
     try {
       await contextSignOut();
     } catch (error) {
-      console.error("Error signing out:", error);
+      logger.error("Error signing out:", { error });
     }
   };
 
   return {
     user,
     profile,
-    loading,
+    loading: loading || sessionLoading,
     isSignedIn: !!user,
     updateProfile,
     refreshProfile,

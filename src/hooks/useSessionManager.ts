@@ -5,6 +5,7 @@
 
 import { useCallback } from "react";
 import { useAuthContext } from "@/contexts/SupabaseAuthContext";
+import { useSessionContext } from "@supabase/auth-helpers-react";
 import {
   debugAuthHeaders,
   validateSessionForDatabaseCall,
@@ -16,6 +17,13 @@ import { logger } from "@/lib/logger";
 
 export const useSessionManager = () => {
   const { session, isSessionValid, refreshSession } = useAuthContext();
+
+  // Use the session context from auth-helpers-react for additional functionality
+  const {
+    isLoading: sessionLoading,
+    error: sessionError,
+    supabaseClient,
+  } = useSessionContext();
 
   /**
    * Debug current session and auth headers
@@ -30,6 +38,8 @@ export const useSessionManager = () => {
         userId: session?.user?.id,
         expiresAt: session?.expires_at,
         isValid: isSessionValid(),
+        loading: sessionLoading,
+        error: sessionError ? sessionError.message : null,
       },
       authHeaders: authInfo,
       synchronization: syncInfo,
@@ -37,12 +47,17 @@ export const useSessionManager = () => {
 
     logger.info("Session debug info", debugInfo);
     return debugInfo;
-  }, [session, isSessionValid]);
+  }, [session, isSessionValid, sessionLoading, sessionError]);
 
   /**
    * Validate session before making database calls
    */
   const validateForDatabaseCall = useCallback(async () => {
+    // If we're still loading the session, wait a bit
+    if (sessionLoading) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
     const validation = await validateSessionForDatabaseCall();
 
     if (!validation.isValid) {
@@ -52,7 +67,7 @@ export const useSessionManager = () => {
     }
 
     return validation;
-  }, []);
+  }, [sessionLoading]);
 
   /**
    * Ensure auth headers are properly set
@@ -104,6 +119,8 @@ export const useSessionManager = () => {
     const results = {
       sessionExists: !!session,
       sessionValid: isSessionValid(),
+      sessionLoading,
+      sessionError: sessionError ? sessionError.message : null,
       authHeaders: await debugAuthHeaders(),
       databaseValidation: await validateSessionForDatabaseCall(),
       synchronization: await checkSessionSynchronization(),
@@ -112,6 +129,8 @@ export const useSessionManager = () => {
     const isHealthy =
       results.sessionExists &&
       results.sessionValid &&
+      !results.sessionLoading &&
+      !results.sessionError &&
       results.authHeaders.hasAuthHeader &&
       results.databaseValidation.isValid &&
       results.synchronization.isSync;
@@ -125,7 +144,7 @@ export const useSessionManager = () => {
       isHealthy,
       results,
     };
-  }, [session, isSessionValid]);
+  }, [session, isSessionValid, sessionLoading, sessionError]);
 
   /**
    * Attempt to recover from session issues
@@ -160,6 +179,8 @@ export const useSessionManager = () => {
     // Session state
     session,
     isSessionValid,
+    sessionLoading,
+    sessionError,
 
     // Session management
     refreshSession,

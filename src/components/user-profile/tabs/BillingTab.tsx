@@ -59,10 +59,10 @@ export const BillingTab: React.FC<BillingTabProps> = ({
     return new Date(dateString).toLocaleDateString();
   };
 
-const navigate = useNavigate();
-const handelOnNavigate = (path: string) => {
-  navigate(path);
-};
+  const navigate = useNavigate();
+  const handelOnNavigate = (path: string) => {
+    navigate(path);
+  };
   // Fetch payment history from the payment_history table
   useEffect(() => {
     const fetchPaymentHistory = async () => {
@@ -75,10 +75,7 @@ const handelOnNavigate = (path: string) => {
       setIsLoadingHistory(true);
 
       try {
-        console.log("Fetching payment history for Clerk userId:", userId);
-
-        // Since we're using Clerk auth, we need to filter by user_id directly
-        // We'll need to temporarily disable RLS or create a more permissive policy
+        console.log("Fetching payment history for userId:", userId);
         const { data: payment_history, error } = await supabase
           .from("payment_history")
           .select("*")

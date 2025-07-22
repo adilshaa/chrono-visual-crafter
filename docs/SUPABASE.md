@@ -115,12 +115,12 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/<function
 
 #### 1. Profiles Table
 
-Stores user profile information linked to Clerk authentication.
+Stores user profile information linked to Supabase authentication.
 
 ```sql
 CREATE TABLE public.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT UNIQUE NOT NULL,  -- Clerk user ID
+  user_id TEXT UNIQUE NOT NULL,  -- Supabase user ID
   email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
@@ -198,7 +198,7 @@ CREATE TABLE public.payment_history (
 ```sql
 -- Upsert user subscription
 SELECT public.upsert_user_subscription(
-  p_user_id := 'clerk_user_id',
+  p_user_id := 'supabase_user_id',
   p_plan_id := 'plan_uuid',
   p_paddle_subscription_id := 'paddle_sub_id',
   p_status := 'active',
@@ -208,7 +208,7 @@ SELECT public.upsert_user_subscription(
 
 -- Cancel subscription
 SELECT public.cancel_user_subscription(
-  p_user_id := 'clerk_user_id',
+  p_user_id := 'supabase_user_id',
   p_paddle_subscription_id := 'paddle_sub_id',
   p_reason := 'user_initiated'
 );
@@ -219,7 +219,7 @@ SELECT public.cancel_user_subscription(
 ```sql
 -- Get comprehensive subscription status
 SELECT * FROM public.user_subscription_status
-WHERE user_id = 'clerk_user_id';
+WHERE user_id = 'supabase_user_id';
 ```
 
 ## Edge Functions
@@ -256,7 +256,7 @@ supabase functions deploy cancel-subscription
 
 ## Row Level Security (RLS)
 
-All tables have RLS enabled with policies based on Clerk user authentication:
+All tables have RLS enabled with policies based on Supabase user authentication:
 
 ```sql
 -- Example policy for profiles

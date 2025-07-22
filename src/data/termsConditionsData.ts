@@ -43,7 +43,7 @@ export const termsConditionsData = {
         {
           title: "Account Creation",
           content:
-            "To access certain features of our Service, you must create an account through our authentication provider, Clerk. You agree to:",
+            "To access certain features of our Service, you must create an account through our secure authentication system. You agree to:",
           items: [
             "Provide accurate, current, and complete information",
             "Maintain and update your account information",

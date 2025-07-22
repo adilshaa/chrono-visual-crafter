@@ -1,5 +1,5 @@
--- Add RLS policies for Clerk authentication
--- For now, we'll use a simpler approach that works with Clerk
+-- Add RLS policies for Supabase authentication
+-- Using Supabase native authentication
 
 -- Option 1: Temporarily disable RLS for development (uncomment if needed)
 -- ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
@@ -19,8 +19,8 @@ CREATE POLICY "Allow all operations on saved_text_settings" ON public.saved_text
 
 -- Note: Subscription plans already have a public read policy from previous migrations
 
--- For production, you would want to implement proper Clerk JWT verification
+-- For production, you would want to implement proper user-specific policies
 -- This would require:
--- 1. Configuring Supabase to accept Clerk JWT tokens
--- 2. Using current_setting('request.jwt.claims') to get the user ID
--- 3. Creating proper user-specific policies
+-- 1. Using auth.uid() to get the authenticated user ID
+-- 2. Creating proper user-specific policies based on user_id columns
+-- 3. Ensuring proper security for multi-tenant data access

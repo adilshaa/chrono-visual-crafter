@@ -63,7 +63,7 @@ export function UserMenu({ className }: UserMenuProps) {
   };
 
   if (!user) return null;
-
+ 
   // Determine subscription badge style
   const isPro = (profile?.subscription_plan || "")
     .toLowerCase()
@@ -82,7 +82,6 @@ export function UserMenu({ className }: UserMenuProps) {
       ? "from-amber-400 to-orange-500"
       : "from-amber-500 to-orange-600";
   }
-
   return (
     <div className={cn("relative", className)} ref={menuRef}>
       <button
@@ -99,8 +98,8 @@ export function UserMenu({ className }: UserMenuProps) {
       >
         <div className="relative">
           <img
-            src={user.imageUrl}
-            alt={user.fullName || "User"}
+            src={user.user_metadata.avatar_url}
+            alt={user.user_metadata.full_name || "User"}
             className={cn(
               "w-8 h-8 rounded-full",
               isLandingPage
@@ -128,7 +127,7 @@ export function UserMenu({ className }: UserMenuProps) {
               isLandingPage ? "text-white" : ""
             )}
           >
-            {user.fullName || "User"}
+            {user.user_metadata.full_name || "User"}
           </span>
           <ChevronDown
             className={cn(
@@ -181,8 +180,8 @@ export function UserMenu({ className }: UserMenuProps) {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <img
-                      src={user.imageUrl}
-                      alt={user.fullName || "User"}
+                      src={user.user_metadata.avatar_url}
+                      alt={user.user_metadata.full_name || "User"}
                       className={cn(
                         "w-12 h-12 rounded-full",
                         isLandingPage

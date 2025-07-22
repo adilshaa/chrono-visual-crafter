@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
 import { handleAuthError } from "@/lib/auth-errors";
+import { useSessionContext } from "@supabase/auth-helpers-react";
 
 // Profile type based on the database schema
 interface Profile {
@@ -44,11 +45,11 @@ interface AuthContextType {
   verifyOTP: (
     email: string,
     token: string,
-    type: "signup" | "recovery"
+    type: "signup" | "recovery" | "email_change" | "phone_change"
   ) => Promise<AuthResponse>;
   resendOTP: (
     email: string,
-    type: "signup" | "recovery"
+    type: "signup" | "recovery" | "email_change" | "phone_change"
   ) => Promise<AuthResponse>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<AuthResponse>;
@@ -78,16 +79,18 @@ interface SupabaseAuthProviderProps {
 export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
   children,
 }) => {
+  // Use the session from auth-helpers-react which handles cross-tab synchronization
+  const {
+    session: helperSession,
+    isLoading: helperLoading,
+    supabaseClient,
+    error: sessionError,
+  } = useSessionContext();
+
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
-
-  // Refs for session management
-  const authStateListenerRef = useRef<any>(null);
-  const sessionRefreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSessionCheckRef = useRef<number>(0);
 
   // Function to create or fetch user profile
   const syncUserProfile = useCallback(
@@ -96,11 +99,12 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
         logger.info("Syncing user profile", { userId: user.id });
 
         // First, try to fetch existing profile
-        const { data: existingProfile, error: fetchError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
+        const { data: existingProfile, error: fetchError } =
+          await supabaseClient
+            .from("profiles")
+            .select("*")
+            .eq("user_id", user.id)
+            .single();
 
         if (fetchError && fetchError.code !== "PGRST116") {
           logger.error("Error fetching profile", {
@@ -137,11 +141,12 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
               logger.warn("Invalid referral ID format", { referralId });
             } else {
               // Find the referrer by their ref_id
-              const { data: referrer, error: referrerError } = await supabase
-                .from("profiles")
-                .select("user_id, credits, ref_credits, full_name")
-                .eq("ref_id", referralId)
-                .single();
+              const { data: referrer, error: referrerError } =
+                await supabaseClient
+                  .from("profiles")
+                  .select("user_id, credits, ref_credits, full_name")
+                  .eq("ref_id", referralId)
+                  .single();
 
               if (referrer && !referrerError) {
                 // Prevent self-referral
@@ -158,7 +163,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
                   const updatedCredits = (referrer.credits || 0) + 20;
                   const updatedRefCredits = (referrer.ref_credits || 0) + 20;
 
-                  const { error: updateError } = await supabase
+                  const { error: updateError } = await supabaseClient
                     .from("profiles")
                     .update({
                       credits: updatedCredits,
@@ -194,17 +199,8 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
             logger.error("Error processing referral", { error, referralId });
           }
         }
-        console.log("newUserCredits--2", {
-          user_id: user.id,
-          email: user.email || "",
-          full_name: user.user_metadata?.full_name || "",
-          avatar_url: user.user_metadata?.avatar_url || null,
-          subscription_status: "free",
-          subscription_plan: "free",
-          credits: newUserCredits,
-          referred_by: referrerUserId,
-        });
-        const { data: newProfile, error: insertError } = await supabase
+
+        const { data: newProfile, error: insertError } = await supabaseClient
           .from("profiles")
           .insert({
             user_id: user.id,
@@ -251,214 +247,34 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
         throw error;
       }
     },
-    [toast]
+    [toast, supabaseClient]
   );
 
-  // Initialize auth state
+  // Update our state when the session from auth-helpers changes
   useEffect(() => {
-    let mounted = true;
+    if (sessionError) {
+      logger.error("Session error from auth-helpers", { error: sessionError });
+    }
 
-    const initializeAuth = async () => {
-      try {
-        // Get initial session
-        const {
-          data: { session: initialSession },
-          error,
-        } = await supabase.auth.getSession();
+    if (!helperLoading) {
+      setUser(helperSession?.user || null);
 
-        if (error) {
-          logger.error("Error getting initial session", { error });
-          if (mounted) {
-            setLoading(false);
-          }
-          return;
-        }
-
-        if (initialSession?.user && mounted) {
-          setSession(initialSession);
-          setUser(initialSession.user);
-          lastSessionCheckRef.current = Date.now();
-          await syncUserProfile(initialSession.user);
-        }
-
-        if (mounted) {
-          setLoading(false);
-        }
-      } catch (error) {
-        logger.error("Error initializing auth", { error });
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      logger.info("Auth state changed", { event, session: session });
-
-      setSession(session);
-      setUser(session?.user ?? null);
-      lastSessionCheckRef.current = Date.now();
-
-      // Note: OAuth referral handling has been removed since Google signup
-      // is now disabled when referral links are used. Referrals are only
-      // processed through manual signup to ensure proper attribution.
-
-      if (session?.user) {
-        try {
-          await syncUserProfile(session.user);
-        } catch (error) {
-          logger.error("Error syncing profile on auth change", { error });
-        }
+      if (helperSession?.user) {
+        syncUserProfile(helperSession.user).catch((error) => {
+          logger.error("Error syncing profile on session change", { error });
+        });
       } else {
         setProfile(null);
       }
 
       setLoading(false);
-    });
-
-    // Store the subscription reference for cleanup
-    authStateListenerRef.current = subscription;
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-
-      // Clear any pending session refresh timeouts
-      if (sessionRefreshTimeoutRef.current) {
-        clearTimeout(sessionRefreshTimeoutRef.current);
-      }
-    };
-  }, [syncUserProfile]);
-
-  // Automatic session validation and refresh
-  const validateAndRefreshSession = useCallback(async () => {
-    const now = Date.now();
-    const timeSinceLastCheck = now - lastSessionCheckRef.current;
-
-    // Only check session every 30 seconds to avoid excessive calls
-    if (timeSinceLastCheck < 30000) {
-      return;
     }
-
-    lastSessionCheckRef.current = now;
-
-    if (!session) {
-      return;
-    }
-
-    try {
-      // Get current session from Supabase
-      const {
-        data: { session: currentSession },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error) {
-        logger.error("Error checking current session", { error });
-        return;
-      }
-
-      // If no session or session changed, update state
-      if (!currentSession) {
-        logger.info("No current session found, clearing state");
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        return;
-      }
-
-      // Update session if it's different from current state
-      if (currentSession.access_token !== session.access_token) {
-        logger.info("Session updated from external source", {
-          userId: currentSession.user?.id,
-        });
-        setSession(currentSession);
-        setUser(currentSession.user);
-
-        if (currentSession.user) {
-          await syncUserProfile(currentSession.user);
-        }
-      }
-    } catch (error) {
-      logger.error("Error validating session", { error });
-    }
-  }, [session, syncUserProfile]);
-
-  // Cross-tab session synchronization and periodic validation
-  useEffect(() => {
-    let mounted = true;
-    let intervalId: NodeJS.Timeout;
-
-    // Set up periodic session validation (every 60 seconds)
-    const setupPeriodicValidation = () => {
-      intervalId = setInterval(async () => {
-        if (!mounted) return;
-
-        try {
-          await validateAndRefreshSession();
-        } catch (error) {
-          logger.error("Error during periodic session validation", { error });
-        }
-      }, 60000); // Check every minute
-    };
-
-    // Cross-tab synchronization using storage events
-    const handleStorageChange = (event: StorageEvent) => {
-      if (!mounted) return;
-
-      // Listen for changes to Supabase auth storage
-      if (event.key?.startsWith("sb-") && event.key.includes("-auth-token")) {
-        logger.info("Auth storage changed in another tab, validating session");
-
-        // Debounce the validation to avoid excessive calls
-        if (sessionRefreshTimeoutRef.current) {
-          clearTimeout(sessionRefreshTimeoutRef.current);
-        }
-
-        sessionRefreshTimeoutRef.current = setTimeout(async () => {
-          try {
-            await validateAndRefreshSession();
-          } catch (error) {
-            logger.error("Error validating session after storage change", {
-              error,
-            });
-          }
-        }, 1000);
-      }
-    };
-
-    // Only set up listeners if we have a session
-    if (session) {
-      setupPeriodicValidation();
-      window.addEventListener("storage", handleStorageChange);
-    }
-
-    return () => {
-      mounted = false;
-
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-
-      window.removeEventListener("storage", handleStorageChange);
-
-      if (sessionRefreshTimeoutRef.current) {
-        clearTimeout(sessionRefreshTimeoutRef.current);
-      }
-    };
-  }, [session, validateAndRefreshSession]);
+  }, [helperSession, helperLoading, sessionError, syncUserProfile]);
 
   // Auth methods
   const signIn = useCallback(
     async (email: string, password: string): Promise<AuthResponse> => {
-      const response = await supabase.auth.signInWithPassword({
+      const response = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
@@ -471,7 +287,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
 
       return response;
     },
-    []
+    [supabaseClient]
   );
 
   const signUp = useCallback(
@@ -480,7 +296,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
       password: string,
       metadata?: object
     ): Promise<AuthResponse> => {
-      const response = await supabase.auth.signUp({
+      const response = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
@@ -496,16 +312,16 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
 
       return response;
     },
-    []
+    [supabaseClient]
   );
 
   const verifyOTP = useCallback(
     async (
       email: string,
       token: string,
-      type: "signup" | "recovery"
+      type: "signup" | "recovery" | "email_change" | "phone_change"
     ): Promise<AuthResponse> => {
-      const response = await supabase.auth.verifyOtp({
+      const response = await supabaseClient.auth.verifyOtp({
         email,
         token,
         type,
@@ -521,15 +337,15 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
 
       return response;
     },
-    []
+    [supabaseClient]
   );
 
   const resendOTP = useCallback(
     async (
       email: string,
-      type: "signup" | "recovery"
+      type: "signup" | "recovery" | "email_change" | "phone_change"
     ): Promise<AuthResponse> => {
-      const response = await supabase.auth.resend({
+      const response = await supabaseClient.auth.resend({
         type,
         email,
       });
@@ -542,11 +358,11 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
 
       return response;
     },
-    []
+    [supabaseClient]
   );
 
   const signOut = useCallback(async (): Promise<void> => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabaseClient.auth.signOut();
 
     if (error) {
       logger.error("Sign out error", { error });
@@ -556,12 +372,11 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
     logger.info("Sign out successful");
     setUser(null);
     setProfile(null);
-    setSession(null);
-  }, []);
+  }, [supabaseClient]);
 
   const resetPassword = useCallback(
     async (email: string): Promise<AuthResponse> => {
-      const response = await supabase.auth.resetPasswordForEmail(email);
+      const response = await supabaseClient.auth.resetPasswordForEmail(email);
 
       if (response.error) {
         logger.error("Password reset error", { error: response.error });
@@ -571,7 +386,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
 
       return response;
     },
-    []
+    [supabaseClient]
   );
 
   const updateProfile = useCallback(
@@ -581,7 +396,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
       }
 
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("profiles")
           .update(updates)
           .eq("user_id", user.id)
@@ -604,7 +419,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
         return { error: "Failed to update profile" };
       }
     },
-    [user]
+    [user, supabaseClient]
   );
 
   const refreshProfile = useCallback(async (): Promise<void> => {
@@ -613,7 +428,7 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
     try {
       logger.info("Refreshing profile data", { userId: user.id });
 
-      const { data: refreshedProfile, error } = await supabase
+      const { data: refreshedProfile, error } = await supabaseClient
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
@@ -631,17 +446,17 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
     } catch (error) {
       logger.error("Error refreshing profile", { error, userId: user.id });
     }
-  }, [user]);
+  }, [user, supabaseClient]);
 
   // Session validation utility
   const isSessionValid = useCallback((): boolean => {
-    if (!session) {
+    if (!helperSession) {
       logger.debug("No session available");
       return false;
     }
 
     const now = Math.floor(Date.now() / 1000);
-    const expiresAt = session.expires_at;
+    const expiresAt = helperSession.expires_at;
 
     if (!expiresAt) {
       logger.debug("Session has no expiration time");
@@ -660,14 +475,14 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
     }
 
     return isValid;
-  }, [session]);
+  }, [helperSession]);
 
   // Manual session refresh utility
   const refreshSession = useCallback(async (): Promise<void> => {
     try {
       logger.info("Manually refreshing session");
 
-      const { data, error } = await supabase.auth.refreshSession();
+      const { data, error } = await supabaseClient.auth.refreshSession();
 
       if (error) {
         logger.error("Error refreshing session", { error });
@@ -679,21 +494,18 @@ export const SupabaseAuthProvider: React.FC<SupabaseAuthProviderProps> = ({
           userId: data.session.user?.id,
           expiresAt: data.session.expires_at,
         });
-        setSession(data.session);
-        setUser(data.session.user);
-        lastSessionCheckRef.current = Date.now();
       }
     } catch (error) {
       logger.error("Failed to refresh session", { error });
       throw error;
     }
-  }, []);
+  }, [supabaseClient]);
 
   const value: AuthContextType = {
     user,
     profile,
-    loading,
-    session,
+    loading: loading || helperLoading,
+    session: helperSession,
     signIn,
     signUp,
     verifyOTP,

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
-import { Loader2 } from "lucide-react";
+import { SessionContextProvider } from "@supabase/auth-helpers-react";
+import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
 
 interface SupabaseAuthWrapperProps {
   children: React.ReactNode;
@@ -34,24 +34,7 @@ const SupabaseAuthWrapper: React.FC<SupabaseAuthWrapperProps> = ({
           userId: data.session?.user?.id,
         });
 
-        // Initialize session persistence
-        const {
-          data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
-          logger.info("Auth state change detected", {
-            event,
-            hasSession: !!session,
-            userId: session?.user?.id,
-          });
-        });
-
-        // Store subscription for cleanup (though it's handled by the context)
         setIsInitialized(true);
-
-        // Cleanup function would be handled by the auth context
-        return () => {
-          subscription.unsubscribe();
-        };
       } catch (error) {
         logger.error("Unexpected error during Supabase initialization", {
           error,
@@ -71,7 +54,7 @@ const SupabaseAuthWrapper: React.FC<SupabaseAuthWrapperProps> = ({
   if (!isInitialized && !initError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#101010] via-[#101010] to-black flex items-center justify-center">
-        <div className="min-h-screen  flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin border-white"></div>
         </div>
       </div>
@@ -116,8 +99,13 @@ const SupabaseAuthWrapper: React.FC<SupabaseAuthWrapperProps> = ({
     );
   }
 
-  // Render the app with Supabase Auth Provider
-  return <SupabaseAuthProvider>{children}</SupabaseAuthProvider>;
+  // Render the app with SessionContextProvider from auth-helpers-react
+  // This handles cross-tab session synchronization automatically
+  return (
+    <SessionContextProvider supabaseClient={supabase} initialSession={null}>
+      <SupabaseAuthProvider>{children}</SupabaseAuthProvider>
+    </SessionContextProvider>
+  );
 };
 
 export default SupabaseAuthWrapper;

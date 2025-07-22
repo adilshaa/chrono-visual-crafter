@@ -1,147 +1,78 @@
-/**
- * Session management utilities for Supabase Auth
- * Provides debugging and validation utilities for session management
- */
-
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 
 /**
- * Debug utility to check if auth headers are properly set
+ * Debug auth headers to check if they're properly set
  */
-export const debugAuthHeaders = async (): Promise<{
-  hasAuthHeader: boolean;
-  authHeaderValue?: string;
-  sessionExists: boolean;
-  userId?: string;
-}> => {
+export const debugAuthHeaders = async () => {
   try {
-    // Get current session
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
+    const { data: authData } = await supabase.auth.getSession();
 
-    if (error) {
-      logger.error("Error getting session for debug", { error });
-      return {
-        hasAuthHeader: false,
-        sessionExists: false,
-      };
-    }
-
-    const sessionExists = !!session;
-    const hasAuthHeader = !!session?.access_token;
+    // Check if auth headers are present in the client
+    const hasAuthHeader = !!authData.session?.access_token;
 
     return {
       hasAuthHeader,
-      authHeaderValue: session?.access_token
-        ? `Bearer ${session.access_token}`
-        : undefined,
-      sessionExists,
-      userId: session?.user?.id,
+      userId: authData.session?.user?.id,
+      expiresAt: authData.session?.expires_at,
     };
   } catch (error) {
-    logger.error("Error in debugAuthHeaders", { error });
+    logger.error("Error debugging auth headers", { error });
     return {
       hasAuthHeader: false,
-      sessionExists: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 };
 
 /**
- * Utility to validate session before making database calls
+ * Validate session before making database calls
  */
-export const validateSessionForDatabaseCall = async (): Promise<{
-  isValid: boolean;
-  error?: string;
-  userId?: string;
-}> => {
+export const validateSessionForDatabaseCall = async () => {
   try {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
 
-    if (error) {
-      logger.error("Session validation error", { error });
-      return {
-        isValid: false,
-        error: "Failed to get session",
-      };
-    }
-
-    if (!session) {
-      logger.warn("No session found for database call");
+    if (!data.session) {
       return {
         isValid: false,
         error: "No active session",
       };
     }
 
-    if (!session.user) {
-      logger.warn("Session exists but no user found");
-      return {
-        isValid: false,
-        error: "Session has no user",
-      };
-    }
-
     // Check if session is expired
     const now = Math.floor(Date.now() / 1000);
-    if (session.expires_at && session.expires_at <= now) {
-      logger.warn("Session is expired", {
-        expiresAt: session.expires_at,
-        now,
-      });
+    const expiresAt = data.session.expires_at;
+
+    if (expiresAt && expiresAt <= now) {
       return {
         isValid: false,
-        error: "Session is expired",
+        error: "Session expired",
+        expiresAt,
+        now,
       };
     }
-
-    logger.debug("Session validation successful", {
-      userId: session.user.id,
-      expiresAt: session.expires_at,
-    });
 
     return {
       isValid: true,
-      userId: session.user.id,
+      user: data.session.user,
+      expiresAt,
     };
   } catch (error) {
-    logger.error("Error validating session", { error });
+    logger.error("Error validating session for database call", { error });
     return {
       isValid: false,
-      error: "Session validation failed",
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 };
 
 /**
- * Utility to ensure Supabase client has proper auth headers
+ * Ensure auth headers are properly set
  */
-export const ensureAuthHeaders = async (): Promise<boolean> => {
+export const ensureAuthHeaders = async () => {
   try {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-
-    if (error || !session) {
-      logger.warn("No valid session for auth headers");
-      return false;
-    }
-
-    // The Supabase client automatically handles auth headers
-    // This function mainly serves as a validation check
-    logger.debug("Auth headers should be automatically set", {
-      userId: session.user?.id,
-      hasAccessToken: !!session.access_token,
-    });
-
-    return true;
+    const { data } = await supabase.auth.getSession();
+    return !!data.session?.access_token;
   } catch (error) {
     logger.error("Error ensuring auth headers", { error });
     return false;
@@ -149,96 +80,104 @@ export const ensureAuthHeaders = async (): Promise<boolean> => {
 };
 
 /**
- * Utility to get the current Supabase client instance
- * Ensures we're using the same client throughout the app
+ * Check if session is synchronized across tabs
  */
-export const getSupabaseClient = () => {
-  return supabase;
-};
-
-/**
- * Utility to check if the current session is synchronized across tabs
- */
-export const checkSessionSynchronization = async (): Promise<{
-  isSync: boolean;
-  localStorageSession?: any;
-  clientSession?: any;
-}> => {
+export const checkSessionSynchronization = async () => {
   try {
-    // Get session from client
-    const {
-      data: { session: clientSession },
-      error,
-    } = await supabase.auth.getSession();
-
-    if (error) {
-      logger.error("Error getting client session for sync check", { error });
-      return { isSync: false };
-    }
-
-    // Get session from localStorage (where Supabase stores it)
-    const storageKey = `sb-${
-      supabase.supabaseUrl.split("//")[1].split(".")[0]
-    }-auth-token`;
-    const localStorageData = localStorage.getItem(storageKey);
-
-    let localStorageSession = null;
-    if (localStorageData) {
-      try {
-        localStorageSession = JSON.parse(localStorageData);
-      } catch (parseError) {
-        logger.warn("Error parsing localStorage session", { parseError });
-      }
-    }
-
-    const isSync = !!(
-      clientSession &&
-      localStorageSession &&
-      clientSession.access_token === localStorageSession.access_token
+    // Get current session from localStorage
+    const localStorageKey = Object.keys(localStorage).find(
+      (key) => key.startsWith("sb-") && key.includes("-auth-token")
     );
 
-    logger.debug("Session synchronization check", {
-      isSync,
-      hasClientSession: !!clientSession,
-      hasLocalStorageSession: !!localStorageSession,
-    });
+    if (!localStorageKey) {
+      return {
+        isSync: false,
+        error: "No session in localStorage",
+      };
+    }
+
+    // Get current session from API
+    const { data } = await supabase.auth.getSession();
+
+    if (!data.session) {
+      return {
+        isSync: false,
+        error: "No session from API",
+      };
+    }
+
+    // Compare access tokens
+    const localStorageData = JSON.parse(
+      localStorage.getItem(localStorageKey) || "{}"
+    );
+    const localAccessToken = localStorageData?.access_token;
+    const apiAccessToken = data.session.access_token;
 
     return {
-      isSync,
-      localStorageSession,
-      clientSession,
+      isSync: localAccessToken === apiAccessToken,
+      localAccessToken: localAccessToken ? "present" : "missing",
+      apiAccessToken: apiAccessToken ? "present" : "missing",
     };
   } catch (error) {
     logger.error("Error checking session synchronization", { error });
-    return { isSync: false };
+    return {
+      isSync: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 };
 
 /**
- * Utility to force session refresh and synchronization
+ * Force session synchronization
  */
-export const forceSyncSession = async (): Promise<boolean> => {
+export const forceSyncSession = async () => {
   try {
-    logger.info("Forcing session synchronization");
-
+    // Refresh the session
     const { data, error } = await supabase.auth.refreshSession();
 
     if (error) {
-      logger.error("Error forcing session sync", { error });
+      logger.error("Error refreshing session during force sync", { error });
       return false;
     }
 
-    if (data.session) {
-      logger.info("Session sync successful", {
-        userId: data.session.user?.id,
-        expiresAt: data.session.expires_at,
-      });
-      return true;
-    }
-
-    return false;
+    return !!data.session;
   } catch (error) {
-    logger.error("Error in forceSyncSession", { error });
+    logger.error("Error forcing session sync", { error });
     return false;
   }
+};
+
+/**
+ * Utility to wrap operations with auth check
+ */
+export const withAuth = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const validation = await validateSessionForDatabaseCall();
+
+  if (!validation.isValid) {
+    throw new Error(`Authentication required: ${validation.error}`);
+  }
+
+  return operation();
+};
+
+/**
+ * Require authentication for operations
+ */
+export const requireAuth = async () => {
+  const validation = await validateSessionForDatabaseCall();
+
+  if (!validation.isValid) {
+    throw new Error(`Authentication required: ${validation.error}`);
+  }
+
+  const { data } = await supabase.auth.getSession();
+
+  if (!data.session || !data.session.user) {
+    throw new Error("No authenticated user");
+  }
+
+  return {
+    user: data.session.user,
+    session: data.session,
+  };
 };
