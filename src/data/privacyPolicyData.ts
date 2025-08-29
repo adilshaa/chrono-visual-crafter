@@ -17,7 +17,7 @@ export const privacyPolicyData = {
   sections: [
     {
       id: "information-collection",
-      title: "Information We Collect",
+      title: "Information We Collect", 
       subsections: [
         {
           title: "Personal Information",
