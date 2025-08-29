@@ -612,7 +612,7 @@ const StudioContent = () => {
           <div className="flex items-center gap-4">
             <img src="/favicon.ico" alt="Logo" className="w-8 h-8 rounded" />
             <h1 className="text-xl sm:text-2xl font-bold text-white">
-              Countable
+              countflow
             </h1>
           </div>
 

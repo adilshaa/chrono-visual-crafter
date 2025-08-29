@@ -12,22 +12,22 @@ export const termsConditionsData = {
   agreementOverview: {
     title: "Agreement Overview",
     content:
-      "By accessing or using Countable's counter animation platform, you agree to be bound by these Terms & Conditions. Please read them carefully before using our services.",
+      "By accessing or using countflow's counter animation platform, you agree to be bound by these Terms & Conditions. Please read them carefully before using our services.",
   },
   sections: [
     {
       id: "acceptance-of-terms",
       title: "Acceptance of Terms",
       content: [
-        'By accessing, browsing, or using the Countable platform ("Service"), you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions ("Terms") and our Privacy Policy. If you do not agree to these Terms, you must not use our Service.',
-        'These Terms constitute a legally binding agreement between you ("User" or "you") and Countable ("Company," "we," "us," or "our"), a company registered in India.',
+        'By accessing, browsing, or using the countflow platform ("Service"), you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions ("Terms") and our Privacy Policy. If you do not agree to these Terms, you must not use our Service.',
+        'These Terms constitute a legally binding agreement between you ("User" or "you") and countflow ("Company," "we," "us," or "our"), a company registered in India.',
       ],
     },
     {
       id: "service-description",
       title: "Service Description",
       content:
-        "Countable provides a web-based platform for creating, customizing, and exporting animated counter elements for digital content creation. Our services include:",
+        "countflow provides a web-based platform for creating, customizing, and exporting animated counter elements for digital content creation. Our services include:",
       items: [
         "Counter animation creation and customization tools",
         "Various transition effects and visual styles",
@@ -129,7 +129,7 @@ export const termsConditionsData = {
         {
           title: "Our Intellectual Property",
           content:
-            "The Service, including all content, features, functionality, software, and design, is owned by Countable and is protected by:",
+            "The Service, including all content, features, functionality, software, and design, is owned by countflow and is protected by:",
           items: [
             "Copyright, trademark, and other intellectual property laws",
             "International treaties and conventions",
@@ -202,7 +202,7 @@ export const termsConditionsData = {
         {
           title: "Limitation of Liability",
           content:
-            "TO THE MAXIMUM EXTENT PERMITTED BY LAW, Countable SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF OR RELATING TO THESE TERMS OR THE SERVICE, REGARDLESS OF THE THEORY OF LIABILITY.",
+            "TO THE MAXIMUM EXTENT PERMITTED BY LAW, countflow SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF OR RELATING TO THESE TERMS OR THE SERVICE, REGARDLESS OF THE THEORY OF LIABILITY.",
         },
       ],
     },
@@ -210,7 +210,7 @@ export const termsConditionsData = {
       id: "indemnification",
       title: "Indemnification",
       content:
-        "You agree to indemnify, defend, and hold harmless Countable, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, costs, or expenses arising out of or relating to:",
+        "You agree to indemnify, defend, and hold harmless countflow, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, costs, or expenses arising out of or relating to:",
       items: [
         "Your use of the Service or violation of these Terms",
         "Your content or any third-party claims related to your content",
@@ -291,7 +291,7 @@ export const termsConditionsData = {
         {
           title: "Entire Agreement",
           content:
-            "These Terms, together with our Privacy Policy, constitute the entire agreement between you and Countable regarding the Service.",
+            "These Terms, together with our Privacy Policy, constitute the entire agreement between you and countflow regarding the Service.",
         },
         {
           title: "Severability",
@@ -316,7 +316,7 @@ export const termsConditionsData = {
       content:
         "If you have questions about these Terms or need to contact us for any reason, please reach out:",
       contactInfo: {
-        company: "Countable",
+        company: "countflow",
         address: "India",
         email: "legal@chronovisual.com",
         support: "support@chronovisual.com",
@@ -327,7 +327,7 @@ export const termsConditionsData = {
   effectiveNotice: {
     title: "Effective Date",
     content:
-      "These Terms & Conditions are effective as of December 18, 2024, and govern your use of the Countable platform and services.",
+      "These Terms & Conditions are effective as of December 18, 2024, and govern your use of the countflow platform and services.",
     bgColor: "green-500/10",
     borderColor: "green-500/20",
     textColor: "green-300",

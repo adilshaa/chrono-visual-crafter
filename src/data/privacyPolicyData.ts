@@ -17,7 +17,7 @@ export const privacyPolicyData = {
   sections: [
     {
       id: "information-collection",
-      title: "Information We Collect", 
+      title: "Information We Collect",
       subsections: [
         {
           title: "Personal Information",
@@ -198,9 +198,8 @@ export const privacyPolicyData = {
       content:
         "If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:",
       contactInfo: {
-        company: "Countable",
+        company: "countflow",
         address: "India",
-        
       },
     },
     {
@@ -213,7 +212,7 @@ export const privacyPolicyData = {
   effectiveNotice: {
     title: "Effective Date",
     content:
-      "This Privacy Policy is effective as of December 18, 2024, and applies to all information collected by Countable.",
+      "This Privacy Policy is effective as of December 18, 2024, and applies to all information collected by countflow.",
     bgColor: "blue-500/10",
     borderColor: "blue-500/20",
     textColor: "blue-300",

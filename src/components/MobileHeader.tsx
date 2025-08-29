@@ -22,7 +22,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
         {/* Logo and Title - Condensed */}
         <div className="flex items-center gap-3">
           <img src="/favicon.ico" alt="Logo" className="w-6 h-6 rounded" />
-          <h1 className="text-lg font-bold text-white truncate">Countable</h1>
+          <h1 className="text-lg font-bold text-white truncate">countflow</h1>
         </div>
 
         {/* Recording Status and User */}

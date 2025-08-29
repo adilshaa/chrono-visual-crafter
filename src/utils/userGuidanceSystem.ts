@@ -230,7 +230,7 @@ export class UserGuidanceSystem {
         messages.push({
           id: "welcome-tip",
           type: "info",
-          title: "Welcome to Countable!",
+          title: "Welcome to countflow!",
           message:
             "Create stunning animated counters with various transition effects. Start by adjusting the counter values and selecting a transition.",
           dismissible: true,
