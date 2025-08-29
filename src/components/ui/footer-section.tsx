@@ -3,6 +3,7 @@ import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
@@ -21,18 +22,22 @@ export function Footer() {
 
       {/* Right side - Terms and Privacy */}
       <AnimatedContainer className="flex items-center gap-4" delay={0.2}>
-        <Button
-          variant="link"
-          className="text-white/60 hover:text-cyan-400 p-0 h-auto"
-        >
-          Terms
-        </Button>
-        <Button
-          variant="link"
-          className="text-white/60 hover:text-cyan-400 p-0 h-auto"
-        >
-          Privacy
-        </Button>
+        <Link to="/terms">
+          <Button
+            variant="link"
+            className="text-white/60 hover:text-cyan-400 p-0 h-auto"
+          >
+            Terms
+          </Button>
+        </Link>
+        <Link to="/privacy">
+          <Button
+            variant="link"
+            className="text-white/60 hover:text-cyan-400 p-0 h-auto"
+          >
+            Privacy
+          </Button>
+        </Link>
       </AnimatedContainer>
 
       {/* Background gradient */}

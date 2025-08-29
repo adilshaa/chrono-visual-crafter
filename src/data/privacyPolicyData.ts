@@ -26,8 +26,20 @@ export const privacyPolicyData = {
           items: [
             "Name and email address (via Clerk authentication)",
             "Profile information you choose to provide",
-            "Payment information (processed securely through Paddle)",
+            "Payment information (processed securely through Lemon Squeezy)",
             "Communication preferences and settings",
+          ],
+        },
+        {
+          title: "Payment and Financial Information",
+          content:
+            "When you make payments or subscribe to our services, we may collect:",
+          items: [
+            "Billing name and address for tax and compliance purposes",
+            "Payment method details (last 4 digits of card, expiry date) - handled by Lemon Squeezy",
+            "Transaction history and subscription status",
+            "Tax identification numbers where legally required",
+            "Invoice and receipt information for accounting purposes",
           ],
         },
         {
@@ -71,12 +83,24 @@ export const privacyPolicyData = {
         {
           title: "Third-Party Service Providers",
           content:
-            "We share information with trusted third-party providers who assist in operating our platform:",
+            "We share information with trusted third-party providers who assist in operating our platform and are bound by strict data protection agreements:",
           items: [
-            "<strong>Clerk:</strong> Authentication and user management services",
-            "<strong>Paddle:</strong> Payment processing and subscription management",
-            "<strong>Supabase:</strong> Database and backend infrastructure",
-            "<strong>Vercel:</strong> Hosting and content delivery services",
+            "<strong>Clerk:</strong> Authentication and user management services - processes name, email, and login data",
+            "<strong>Lemon Squeezy:</strong> Payment processing and subscription management - handles payment information, billing address, and transaction data",
+            "<strong>Supabase:</strong> Database and backend infrastructure - stores user data and application content",
+            "<strong>Vercel:</strong> Hosting and content delivery services - processes usage data and performance metrics",
+            "<strong>Analytics Providers:</strong> Anonymous usage analytics to improve our services",
+          ],
+        },
+        {
+          title: "Payment Data Handling",
+          content:
+            "We do not store your payment card information on our servers. All payment processing is handled by Lemon Squeezy, which is:",
+          items: [
+            "PCI DSS Level 1 certified for secure payment processing",
+            "Compliant with international payment security standards",
+            "Subject to regular security audits and compliance reviews",
+            "Responsible for securing all payment card and financial data",
           ],
         },
         {
@@ -95,16 +119,18 @@ export const privacyPolicyData = {
       id: "data-security",
       title: "Data Security",
       content:
-        "We implement industry-standard security measures to protect your personal information:",
+        "We implement industry-standard security measures to protect your personal information. Our comprehensive security program includes:",
       items: [
-        "Encryption of data in transit and at rest",
-        "Regular security audits and vulnerability assessments",
-        "Access controls and authentication requirements",
-        "Secure payment processing through PCI-compliant providers",
-        "Regular backup and disaster recovery procedures",
+        "<strong>Encryption:</strong> All data is encrypted in transit using TLS 1.3 and at rest using AES-256 encryption",
+        "<strong>Access Controls:</strong> Strict role-based access controls with multi-factor authentication for our team",
+        "<strong>Regular Audits:</strong> Quarterly security audits and vulnerability assessments by third-party experts",
+        "<strong>PCI Compliance:</strong> Payment processing through PCI DSS Level 1 compliant providers only",
+        "<strong>Data Backups:</strong> Regular encrypted backups with secure disaster recovery procedures",
+        "<strong>Incident Response:</strong> 24/7 monitoring with rapid incident response protocols",
+        "<strong>Employee Training:</strong> Regular security training and background checks for all personnel",
       ],
       additionalContent:
-        "While we strive to protect your information, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security but continuously work to improve our security measures.",
+        "While we implement robust security measures and continuously monitor for threats, no method of transmission over the internet or electronic storage is 100% secure. We cannot guarantee absolute security but maintain cyber liability insurance and work with leading security firms to ensure the highest level of protection possible. In the unlikely event of a data breach affecting your personal information, we will notify you within 72 hours as required by applicable data protection laws.",
     },
     {
       id: "user-rights",
@@ -172,11 +198,9 @@ export const privacyPolicyData = {
       content:
         "If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:",
       contactInfo: {
-        company: "Chrono Visual Private Limited",
+        company: "Countable",
         address: "India",
-        email: "privacy@chronovisual.com",
-        dpo: "dpo@chronovisual.com",
-        responseTime: "We will respond to your inquiry within 30 days",
+        
       },
     },
     {
@@ -189,7 +213,7 @@ export const privacyPolicyData = {
   effectiveNotice: {
     title: "Effective Date",
     content:
-      "This Privacy Policy is effective as of December 18, 2024, and applies to all information collected by Chrono Visual Private Limited.",
+      "This Privacy Policy is effective as of December 18, 2024, and applies to all information collected by Countable.",
     bgColor: "blue-500/10",
     borderColor: "blue-500/20",
     textColor: "blue-300",

@@ -6,7 +6,9 @@ interface ContactInfo {
   email: string;
   dpo?: string;
   support?: string;
+  billing?: string;
   responseTime: string;
+  businessHours?: string;
 }
 
 interface Subsection {
@@ -69,7 +71,7 @@ const LegalDocumentRenderer: React.FC<LegalDocumentRendererProps> = ({
       <p className="text-white/80 mb-2">
         <strong>Registered Address:</strong> {contactInfo.address}
       </p>
-      <p className="text-white/80 mb-2">
+      {/* <p className="text-white/80 mb-2">
         <strong>Email:</strong> {contactInfo.email}
       </p>
       {contactInfo.dpo && (
@@ -81,10 +83,20 @@ const LegalDocumentRenderer: React.FC<LegalDocumentRendererProps> = ({
         <p className="text-white/80 mb-2">
           <strong>Support:</strong> {contactInfo.support}
         </p>
-      )}
-      <p className="text-white/80">
+      )} */}
+      {/* {contactInfo.billing && (
+        <p className="text-white/80 mb-2">
+          <strong>Billing Inquiries:</strong> {contactInfo.billing}
+        </p>
+      )} */}
+      {/* <p className="text-white/80 mb-2">
         <strong>Response Time:</strong> {contactInfo.responseTime}
-      </p>
+      </p> */}
+      {/* {contactInfo.businessHours && (
+        <p className="text-white/80">
+          <strong>Business Hours:</strong> {contactInfo.businessHours}
+        </p>
+      )} */}
     </div>
   );
 
